@@ -1,1 +1,7 @@
-# specfit
+
+
+proto:   prototype code
+
+data:    data files
+
+
