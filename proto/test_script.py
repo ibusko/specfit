@@ -40,7 +40,7 @@ def read_file(file_name):
     spectrum = SpectrumData()
 
     spectrum.set_x(w, unit='Angstrom')
-    spectrum.set_y(w, unit='erg.s^-1.cm^-2.Angstrom^-1')
+    spectrum.set_y(f, unit='erg.s^-1.cm^-2.Angstrom^-1')
 
     return spectrum
 
