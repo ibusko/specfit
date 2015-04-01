@@ -5,6 +5,7 @@
 
 import numpy as np
 import astropy.modeling.models as models
+import astropy.modeling.fitting as fitting
 
 from data_objects import SpectrumData
 
@@ -46,7 +47,7 @@ def read_file(file_name):
     return spectrum
 
 
-def _compoundModel(components):
+def compoundModel(components):
     ''' Builds the compound model for the active list of components.
 
     For now, a simple additive composition is used. This will have
@@ -80,8 +81,17 @@ skipped_parameters = {
     'gaussian': 1,
     }
 
+first = True
+
 def _build_component(line, fp, component_type):
-    tokens = line.split()
+    global first
+    if first:
+        first = False
+        line1 = fp.readline()
+        tokens = line1.split()
+    else:
+        tokens = line.split()
+
     if len(tokens) > 1:
         name = tokens[0]
         npar = int(tokens[1])
@@ -93,19 +103,15 @@ def _build_component(line, fp, component_type):
             value = float(tokens1[0])
             pars.append(value)
 
-            # need to throw parameters away. astropy functions
-            # are not compatible with specfit models.
-        try:
+        # need to throw parameters away. astropy functions
+        # are not compatible with specfit models.
+        if component_type in skipped_parameters:
             pars = pars[:-skipped_parameters[component_type]]
-        except KeyError:
-            pass
 
-        try:
+        if component_type in constructors:
             constructor = constructors[component_type]
             component = eval(constructor)
             return name, component
-        except KeyError:
-            pass
 
     return None, None
 
@@ -121,7 +127,7 @@ def read_model(file_name):
 
     Returns
     -------
-      list with instances of Fittable1DModel
+      list with instances of Fittable1DModel and Polynomial1DModel
 
     '''
     n_components = 0
@@ -157,7 +163,16 @@ def read_model(file_name):
 
 if __name__ == "__main__":
     spectrum = read_file("n5548/n5548_mean_g130mb4.asc")
+    x = spectrum.x.data
+    y = spectrum.y.data
 
-    #    model = read_model("n5548/sfn5548_lyalpha.modified")
     model = read_model("n5548/sfn5548_lyalpha")
+    compound_model = compoundModel(model)
+
+    fitter = fitting.LevMarLSQFitter()
+    fit_result = fitter(compound_model, x, y)
+
+    print(compound_model)
+    print(fit_result)
+
 
