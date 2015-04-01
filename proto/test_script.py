@@ -10,9 +10,11 @@ import astropy.modeling.fitting as fitting
 
 from data_objects import SpectrumData
 
+
 def read_file(file_name, regions=None):
     ''' Reads ASCII table with three columns (wavelength,
-        flux, error).
+        flux, error). Can also read a table with wavelength
+        regions that define valid data.
 
     Parameters
     ----------
@@ -66,9 +68,19 @@ def read_file(file_name, regions=None):
             mask3 = np.logical_and(mask1, mask2)
             mask = np.logical_or(mask, mask3)
 
-        spectrum.mask = mask
+        # Make the boolean mask into a float array so it can
+        # be used directly as a weight array by the fitter.
+        fmask = np.where(mask, 1.0, 0.0)
 
-    return spectrum
+        # Can't set a mask in a NDData object. The mask setting causes
+        # the shape of the ndarray inside the NDData object to change to
+        # an (apparently) arbitrary value. For now, we pass the mask
+        # as an independent entity so we can continue to progress on
+        # the main task.
+        #
+        # spectrum.mask = fmask
+
+    return spectrum, fmask
 
 
 def compoundModel(components):
@@ -97,14 +109,15 @@ def compoundModel(components):
     else:
         return None
 
+
+# data used by the _build_component function.
 constructors = {
     'gaussian': 'models.Gaussian1D(*pars)',
     'powerlaw': 'models.PowerLaw1D(*pars)'
 }
-skipped_parameters = {
+discarded_parameters = {
     'gaussian': 1,
-    }
-
+}
 first = True
 
 def _build_component(line, fp, component_type):
@@ -128,9 +141,9 @@ def _build_component(line, fp, component_type):
             pars.append(value)
 
         # need to throw parameters away. astropy functions
-        # are not compatible with specfit models.
-        if component_type in skipped_parameters:
-            pars = pars[:-skipped_parameters[component_type]]
+        # are not directly compatible with specfit models.
+        if component_type in discarded_parameters:
+            pars = pars[:-discarded_parameters[component_type]]
 
         if component_type in constructors:
             constructor = constructors[component_type]
@@ -186,7 +199,7 @@ def read_model(file_name):
 
 
 if __name__ == "__main__":
-    spectrum = read_file("n5548/n5548_mean_g130mb4.asc", regions="n5548/n5548_lyalpha_sample.dat")
+    spectrum, mask = read_file("n5548/n5548_mean_g130mb4.asc", regions="n5548/n5548_lyalpha_sample.dat")
     x = spectrum.x.data
     y = spectrum.y.data
 
@@ -194,9 +207,18 @@ if __name__ == "__main__":
     compound_model = compoundModel(model)
 
     fitter = fitting.LevMarLSQFitter()
-    fit_result = fitter(compound_model, x, y)
+    fit_result = fitter(compound_model, x, y, weights=mask)
 
-    print(compound_model)
-    print(fit_result)
+    # we need much better formatting here, but this
+    # should suffice as a rudimentary way to compare
+    # results with expected values.
+    print("\n\n ********** INPUT VALUES ********** \n\n")
+    for model in compound_model:
+        print(model)
+    print("\n\n\n ********** FITTED VALUES ********** \n\n")
+    for model in fit_result:
+        print(model)
+
+
 
 
