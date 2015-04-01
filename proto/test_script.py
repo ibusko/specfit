@@ -4,16 +4,13 @@
 #
 
 import numpy as np
+
 import astropy.modeling.models as models
 import astropy.modeling.fitting as fitting
 
 from data_objects import SpectrumData
 
-wave = []
-flux = []
-error = []
-
-def read_file(file_name):
+def read_file(file_name, regions=None):
     ''' Reads ASCII table with three columns (wavelength,
         flux, error).
 
@@ -21,28 +18,55 @@ def read_file(file_name):
     ----------
     file_name: str
        the file path and name
+    regions: str, optional
+       an ASCII file with wavelength ranges that define
+       valid data, one range per row
 
     Returns
     -------
       an instance of SpectrumData
 
     '''
+    wa = []
+    fl = []
+    er = []
+
     f = open(file_name, 'r')
     for line in f:
         columns = line.split()
 
-        wave.append(columns[0])
-        flux.append(columns[1])
-        error.append(columns[2])
+        wa.append(float(columns[0]))
+        fl.append(float(columns[1]))
+        er.append(float(columns[2]))
 
-    w = np.array(wave)
-    f = np.array(flux)
-    e = np.array(error)
+    wave = np.array(wa)
+    flux = np.array(fl)
+    error = np.array(er)
 
     spectrum = SpectrumData()
 
-    spectrum.set_x(w, unit='Angstrom')
-    spectrum.set_y(f, unit='erg.s^-1.cm^-2.Angstrom^-1')
+    spectrum.set_x(wave, unit='Angstrom')
+    spectrum.set_y(flux, unit='erg.s^-1.cm^-2.Angstrom^-1')
+
+    # Note that SpectrumData does not use masked arrays.
+    if regions:
+        mask = np.zeros(len(wave))
+
+        f = open(regions, 'r')
+        for line in f:
+            region = line.split()
+            index1 = np.where(wave >= float(region[0]))
+            index2 = np.where(wave <  float(region[1]))
+
+            mask1 = np.zeros(len(wave))
+            mask1[index1] = 1
+            mask2 = np.zeros(len(wave))
+            mask2[index2] = 1
+
+            mask3 = np.logical_and(mask1, mask2)
+            mask = np.logical_or(mask, mask3)
+
+        spectrum.mask = mask
 
     return spectrum
 
@@ -162,7 +186,7 @@ def read_model(file_name):
 
 
 if __name__ == "__main__":
-    spectrum = read_file("n5548/n5548_mean_g130mb4.asc")
+    spectrum = read_file("n5548/n5548_mean_g130mb4.asc", regions="n5548/n5548_lyalpha_sample.dat")
     x = spectrum.x.data
     y = spectrum.y.data
 
