@@ -214,10 +214,8 @@ if __name__ == "__main__":
     fitter = fitting.LevMarLSQFitter()
 
     start_time = time.clock()
-
     fit_result = fitter(compound_model, x, y, weights=mask)
-
-    elapsed_time = time.clock() - start_time
+    end_time = time.clock()
 
     # we need much better formatting here, but this
     # should suffice as a rudimentary way to compare
@@ -228,7 +226,10 @@ if __name__ == "__main__":
     print("\n\n\n ********** FITTED VALUES ********** \n\n")
     for model in fit_result:
         print(model)
+
+    elapsed_time = end_time - start_time
     print("\nElapsed time in fitter engine: %d s" % elapsed_time)
+
 
 
 
