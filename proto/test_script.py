@@ -218,7 +218,7 @@ if __name__ == "__main__":
     fit_result = fitter(compound_model, x, y, weights=mask)
 
     end_time = float(datetime.now().microsecond)
-Turn off timing.
+
     # we need much better formatting here, but this
     # should suffice as a rudimentary way to compare
     # results with expected values.
