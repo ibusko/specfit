@@ -58,7 +58,7 @@ def read_file(file_name, regions=None):
         f = open(regions, 'r')
         for line in f:
             region = line.split()
-            index1 = np.where(wave >= float(region[0]))
+            index1 = np.where(wave > float(region[0]))
             index2 = np.where(wave <  float(region[1]))
 
             mask1 = np.zeros(len(wave))
@@ -220,14 +220,16 @@ if __name__ == "__main__":
 
     w = mask / e
 
-    model = read_model(datadir + "sfn5548_lyalpha")
+    model = read_model(datadir + "sfn5548_lyalpha2")
     compound_model = compoundModel(model)
 
     fitter = fitting.LevMarLSQFitter()
 
     start_time = time.time()
-    fit_result = fitter(compound_model, x, y, weights=w, acc=1.E-6, maxiter=600)
+    fit_result = fitter(compound_model, x, y, weights=w, acc=1.E-6, maxiter=1000)
     end_time = time.time()
+
+#    print '@@@@@@     line: 232  - ',fitter.fit_info['param_cov']
 
     # chi-squared
     chisq_in  = _chisq(x, y, e, mask, compound_model)
