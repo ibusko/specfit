@@ -83,10 +83,16 @@ class SpectrumData(object):
     """
     Contains exactly two `SpectrumArray` objects; one for flux, the other
     for wavelength.
+
+
+    ADDED INCOMPLETE SUPPORT FOR ERROR ARRAY, JUST TO ENABLE FITTING EXERCISES.
+
+
     """
-    def __init__(self, x=None, y=None):
+    def __init__(self, x=None, y=None, e=None):
         self._x = x
         self._y = y
+        self._e = e
 
     def set_x(self, data, wcs=None, unit=None, name=""):
         if not isinstance(wcs, WCS) and wcs is not None:
@@ -100,6 +106,12 @@ class SpectrumData(object):
 
         self._y = SpectrumArray(data, wcs=wcs, unit=unit)
 
+    def set_e(self, data, wcs=None, unit=None, name=""):
+        if not isinstance(wcs, WCS) and wcs is not None:
+            raise TypeError("wcs object is not of type WCS.")
+
+        self._e = SpectrumArray(data, wcs=wcs, unit=unit)
+
     @property
     def x(self):
         return self._x
@@ -107,6 +119,10 @@ class SpectrumData(object):
     @property
     def y(self):
         return self._y
+
+    @property
+    def e(self):
+        return self._e
 
     @property
     def shape(self):

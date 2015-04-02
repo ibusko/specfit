@@ -49,6 +49,7 @@ def read_file(file_name, regions=None):
 
     spectrum.set_x(wave, unit='Angstrom')
     spectrum.set_y(flux, unit='erg.s^-1.cm^-2.Angstrom^-1')
+    spectrum.set_e(error, unit='erg.s^-1.cm^-2.Angstrom^-1')
 
     # Note that SpectrumData does not use masked arrays.
     if regions:
@@ -198,7 +199,15 @@ def read_model(file_name):
     return result
 
 
-from datetime import datetime
+import math
+import time
+
+def _chisq(x, y, e, mask, model):
+    chisq = np.power(((y - model(x)) / e), 2)
+    chisq = np.sum(chisq * mask)
+    npoints = sum(mask)
+    nparams = len(model._param_names)
+    return math.sqrt(chisq / (npoints - nparams))
 
 if __name__ == "__main__":
 
@@ -207,33 +216,40 @@ if __name__ == "__main__":
     spectrum, mask = read_file(datadir + "n5548_mean_g130mb4.asc", regions=datadir + "n5548_lyalpha_sample.dat")
     x = spectrum.x.data
     y = spectrum.y.data
+    e = spectrum.e.data
 
     model = read_model(datadir + "sfn5548_lyalpha")
     compound_model = compoundModel(model)
 
     fitter = fitting.LevMarLSQFitter()
 
-    start_time = float(datetime.now().microsecond)
+    start_time = time.time()
+    fit_result = fitter(compound_model, x, y, weights=mask, acc=1.E-7, maxiter=1000)
+    end_time = time.time()
 
-    fit_result = fitter(compound_model, x, y, weights=mask)
-
-    end_time = float(datetime.now().microsecond)
+    # chi-squared
+    chisq_in  = _chisq(x, y, e, mask, compound_model)
+    chisq_out = _chisq(x, y, e, mask, fit_result)
 
     # we need much better formatting here, but this
     # should suffice as a rudimentary way to compare
     # results with expected values.
-    print("\n\n ********** INPUT VALUES ********** \n\n")
+    print("\n\n ********** INPUT MODEL ********** \n\n")
     for model in compound_model:
         print(model)
-    print("\n\n\n ********** FITTED VALUES ********** \n\n")
+    print("\n\n\n ********** FITTED MODEL ********** \n\n")
     for model in fit_result:
         print(model)
+    print("\n\n\n ********** REDUCED CHI SQUARE ********** \n\n")
+    print("From input model:  %f" % chisq_in)
+    print("From output model: %f" % chisq_out)
+    print("Total data points: %d" % len(x))
+    print("Data points in wavelength ranges: %d" % np.sum(mask))
+    print("Number of free parameters: %d" % len(fit_result._param_names))
 
-    elapsed_time = (end_time - start_time) * 1.E-6
-    # timing is tricky, to say the least.....
-    # print("\nElapsed time in fitter engine: %f sec" % elapsed_time)
+    elapsed_time = end_time - start_time
+    print("\nElapsed time in fitter engine: %f sec" % elapsed_time)
 
-    #todo add errors to the computation
 
 
 
