@@ -218,13 +218,15 @@ if __name__ == "__main__":
     y = spectrum.y.data
     e = spectrum.e.data
 
+    w = mask / e
+
     model = read_model(datadir + "sfn5548_lyalpha")
     compound_model = compoundModel(model)
 
     fitter = fitting.LevMarLSQFitter()
 
     start_time = time.time()
-    fit_result = fitter(compound_model, x, y, weights=mask, acc=1.E-7, maxiter=1000)
+    fit_result = fitter(compound_model, x, y, weights=w, acc=1.E-6, maxiter=600)
     end_time = time.time()
 
     # chi-squared
