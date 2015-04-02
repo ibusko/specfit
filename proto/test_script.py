@@ -199,11 +199,14 @@ def read_model(file_name):
 
 
 if __name__ == "__main__":
-    spectrum, mask = read_file("n5548/n5548_mean_g130mb4.asc", regions="n5548/n5548_lyalpha_sample.dat")
+
+    datadir = "../data/n5548/"
+
+    spectrum, mask = read_file(datadir + "n5548_mean_g130mb4.asc", regions=datadir + "n5548_lyalpha_sample.dat")
     x = spectrum.x.data
     y = spectrum.y.data
 
-    model = read_model("n5548/sfn5548_lyalpha")
+    model = read_model(datadir + "sfn5548_lyalpha")
     compound_model = compoundModel(model)
 
     fitter = fitting.LevMarLSQFitter()
