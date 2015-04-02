@@ -198,6 +198,8 @@ def read_model(file_name):
     return result
 
 
+import time
+
 if __name__ == "__main__":
 
     datadir = "../data/n5548/"
@@ -210,7 +212,12 @@ if __name__ == "__main__":
     compound_model = compoundModel(model)
 
     fitter = fitting.LevMarLSQFitter()
+
+    start_time = time.clock()
+
     fit_result = fitter(compound_model, x, y, weights=mask)
+
+    elapsed_time = time.clock() - start_time
 
     # we need much better formatting here, but this
     # should suffice as a rudimentary way to compare
@@ -221,6 +228,7 @@ if __name__ == "__main__":
     print("\n\n\n ********** FITTED VALUES ********** \n\n")
     for model in fit_result:
         print(model)
+    print("\nElapsed time in fitter engine: %d s" % elapsed_time)
 
 
 
