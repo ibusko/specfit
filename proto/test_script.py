@@ -198,7 +198,7 @@ def read_model(file_name):
     return result
 
 
-import time
+from datetime import datetime
 
 if __name__ == "__main__":
 
@@ -213,10 +213,12 @@ if __name__ == "__main__":
 
     fitter = fitting.LevMarLSQFitter()
 
-    start_time = time.clock()
-    fit_result = fitter(compound_model, x, y, weights=mask)
-    end_time = time.clock()
+    start_time = float(datetime.now().microsecond)
 
+    fit_result = fitter(compound_model, x, y, weights=mask)
+
+    end_time = float(datetime.now().microsecond)
+Turn off timing.
     # we need much better formatting here, but this
     # should suffice as a rudimentary way to compare
     # results with expected values.
@@ -227,8 +229,12 @@ if __name__ == "__main__":
     for model in fit_result:
         print(model)
 
-    elapsed_time = end_time - start_time
-    print("\nElapsed time in fitter engine: %d s" % elapsed_time)
+    elapsed_time = (end_time - start_time) * 1.E-6
+    # timing is tricky, to say the least.....
+    # print("\nElapsed time in fitter engine: %f sec" % elapsed_time)
+
+    #todo add errors to the computation
+
 
 
 
