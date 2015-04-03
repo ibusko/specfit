@@ -8,10 +8,7 @@ import numpy as np
 import astropy.modeling.models as models
 import astropy.modeling.fitting as fitting
 
-from astropy.modeling import Parameter
-
 from data_objects import SpectrumData
-
 
 
 class gaussian(models.Gaussian1D):
@@ -46,8 +43,6 @@ class powerlaw(models.PowerLaw1D):
         self.amplitude.fixed = fix_amplitude
         self.x_0.fixed = fix_x_0
 
-
-    
 
 def read_file(file_name, regions=None):
     ''' Reads ASCII table with three columns (wavelength,
@@ -141,19 +136,26 @@ def compoundModel(components):
 
     '''
     if len(components) > 0:
-        sum_of_models = components[0]
+        compound_model = components[0]
         for component in components[1:]:
-            sum_of_models += component
-        return sum_of_models
+            # composition is for now just additive.
+            compound_model += component
+
+        # set the 'fixed' flag in the compound model parameters.
+        for component_index in range(len(components)):
+            component = components[component_index]
+            for parameter_name in component.param_names:
+                compound_model_parameter_name = compound_model._param_map_inverse[(component_index,parameter_name)]
+                compound_model.fixed[compound_model_parameter_name] = components[component_index].fixed[parameter_name]
+
+        return compound_model
     else:
         return None
 
 
 # data used by the _build_component function.
 constructors = {
-#    'gaussian': 'models.Gaussian1D(*pars)',
     'gaussian': 'gaussian(*pars)',
-#    'powerlaw': 'models.PowerLaw1D(*pars)'
     'powerlaw': 'powerlaw(*pars)'
 }
 discarded_parameters = {
@@ -243,12 +245,11 @@ def read_model(file_name):
 import math
 import time
 
-def _chisq(x, y, e, mask, model):
+def _chisq(x, y, e, mask, model, nfree):
     chisq = np.power(((y - model(x)) / e), 2)
     chisq = np.sum(chisq * mask)
     npoints = sum(mask)
-    nparams = len(model._param_names)
-    return math.sqrt(chisq / (npoints - nparams))
+    return math.sqrt(chisq / (npoints - nfree))
 
 if __name__ == "__main__":
 
@@ -270,11 +271,15 @@ if __name__ == "__main__":
     fit_result = fitter(compound_model, x, y, weights=w, acc=1.E-6, maxiter=1000)
     end_time = time.time()
 
-#    print '@@@@@@     line: 232  - ',fitter.fit_info['param_cov']
+#    print '@@@@@@     line: 274  - ',fitter.fit_info['param_cov']
 
     # chi-squared
-    chisq_in  = _chisq(x, y, e, mask, compound_model)
-    chisq_out = _chisq(x, y, e, mask, fit_result)
+    fix = np.asarray(fit_result.fixed.values())
+    free = np.where(fix, 0, 1)
+    n_free = sum(free)
+
+    chisq_in  = _chisq(x, y, e, mask, compound_model, n_free)
+    chisq_out = _chisq(x, y, e, mask, fit_result, n_free)
 
     # we need much better formatting here, but this
     # should suffice as a rudimentary way to compare
@@ -290,7 +295,7 @@ if __name__ == "__main__":
     print("From output model: %f" % chisq_out)
     print("Total data points: %d" % len(x))
     print("Data points in wavelength ranges: %d" % np.sum(mask))
-    print("Number of free parameters: %d" % len(fit_result._param_names))
+    print("Number of free parameters: %d" % n_free)
 
     elapsed_time = end_time - start_time
     print("\nElapsed time in fitter engine: %f sec" % elapsed_time)
