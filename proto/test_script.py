@@ -15,9 +15,9 @@ from data_objects import SpectrumData
 
 
 class gaussian(models.Gaussian1D):
-    amplitude = Parameter()
-    mean = Parameter()
-    stddev = Parameter()
+    def __init__(self, *args):
+
+        super(gaussian, self).__init__(*args)
 
 
 
