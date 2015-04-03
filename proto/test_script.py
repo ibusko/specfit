@@ -17,8 +17,34 @@ from data_objects import SpectrumData
 class gaussian(models.Gaussian1D):
     def __init__(self, *args):
 
-        super(gaussian, self).__init__(*args)
+        amp  = args[0][0]
+        mean = args[1][0]
+        stdd = args[2][0]
 
+        super(gaussian, self).__init__(amp, mean, stdd)
+
+        fix_amplitude = args[0][1]
+        fix_mean = args[1][1]
+        fix_stdd = args[2][1]
+
+        self.amplitude.fixed = fix_amplitude
+        self.mean.fixed = fix_mean
+        self.stddev.fixed = fix_stdd
+
+
+class powerlaw(models.PowerLaw1D):
+    def __init__(self, *args):
+
+        amp = args[0][0]
+        x0  = args[1][0]
+
+        super(powerlaw, self).__init__(amp, x0)
+
+        fix_amplitude = args[0][1]
+        fix_x_0 = args[1][1]
+
+        self.amplitude.fixed = fix_amplitude
+        self.x_0.fixed = fix_x_0
 
 
     
@@ -127,7 +153,8 @@ def compoundModel(components):
 constructors = {
 #    'gaussian': 'models.Gaussian1D(*pars)',
     'gaussian': 'gaussian(*pars)',
-    'powerlaw': 'models.PowerLaw1D(*pars)'
+#    'powerlaw': 'models.PowerLaw1D(*pars)'
+    'powerlaw': 'powerlaw(*pars)'
 }
 discarded_parameters = {
     'gaussian': 1,
@@ -152,9 +179,8 @@ def _build_component(line, fp, component_type):
             tokens1 = line1.split()
             # parameter attributes
             value = float(tokens1[0])
-            fixed = tokens1[5] < 0
-#            pars.append( (value, "fixed="+str(fixed)) )
-            pars.append(value)
+            fixed = int(tokens1[5]) < 0
+            pars.append( (value, fixed) )
 
         # need to throw parameters away. astropy functions
         # are not directly compatible with specfit models.
