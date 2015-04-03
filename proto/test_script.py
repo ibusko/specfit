@@ -8,8 +8,20 @@ import numpy as np
 import astropy.modeling.models as models
 import astropy.modeling.fitting as fitting
 
+from astropy.modeling import Parameter
+
 from data_objects import SpectrumData
 
+
+
+class gaussian(models.Gaussian1D):
+    amplitude = Parameter()
+    mean = Parameter()
+    stddev = Parameter()
+
+
+
+    
 
 def read_file(file_name, regions=None):
     ''' Reads ASCII table with three columns (wavelength,
@@ -113,7 +125,8 @@ def compoundModel(components):
 
 # data used by the _build_component function.
 constructors = {
-    'gaussian': 'models.Gaussian1D(*pars)',
+#    'gaussian': 'models.Gaussian1D(*pars)',
+    'gaussian': 'gaussian(*pars)',
     'powerlaw': 'models.PowerLaw1D(*pars)'
 }
 discarded_parameters = {
@@ -137,8 +150,10 @@ def _build_component(line, fp, component_type):
         for count in range(npar):
             line1 = fp.readline()
             tokens1 = line1.split()
-            # parameter value
+            # parameter attributes
             value = float(tokens1[0])
+            fixed = tokens1[5] < 0
+#            pars.append( (value, "fixed="+str(fixed)) )
             pars.append(value)
 
         # need to throw parameters away. astropy functions
@@ -253,9 +268,6 @@ if __name__ == "__main__":
 
     elapsed_time = end_time - start_time
     print("\nElapsed time in fitter engine: %f sec" % elapsed_time)
-
-
-
 
 
 
