@@ -249,7 +249,7 @@ def _chisq(x, y, e, mask, model, nfree):
     chisq = np.power(((y - model(x)) / e), 2)
     chisq = np.sum(chisq * mask)
     npoints = sum(mask)
-    return math.sqrt(chisq / (npoints - nfree))
+    return math.sqrt(chisq / (npoints - nfree - 1))
 
 if __name__ == "__main__":
 
@@ -275,11 +275,10 @@ if __name__ == "__main__":
 
     # chi-squared
     fix = np.asarray(fit_result.fixed.values())
-    free = np.where(fix, 0, 1)
-    n_free = sum(free)
+    n_free_par = sum(np.where(fix, 0, 1))
 
-    chisq_in  = _chisq(x, y, e, mask, compound_model, n_free)
-    chisq_out = _chisq(x, y, e, mask, fit_result, n_free)
+    chisq_in  = _chisq(x, y, e, mask, compound_model, n_free_par)
+    chisq_out = _chisq(x, y, e, mask, fit_result, n_free_par)
 
     # we need much better formatting here, but this
     # should suffice as a rudimentary way to compare
@@ -295,7 +294,7 @@ if __name__ == "__main__":
     print("From output model: %f" % chisq_out)
     print("Total data points: %d" % len(x))
     print("Data points in wavelength ranges: %d" % np.sum(mask))
-    print("Number of free parameters: %d" % n_free)
+    print("Number of free parameters: %d" % n_free_par)
 
     elapsed_time = end_time - start_time
     print("\nElapsed time in fitter engine: %f sec" % elapsed_time)
