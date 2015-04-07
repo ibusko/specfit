@@ -1,17 +1,10 @@
-# test script
-#
-# attempt at reading spectrum and building model
-#
+# Functions for fitting spectral data.
 
 import numpy as np
 
-from astropy.modeling import Parameter, Fittable1DModel
 import astropy.modeling.models as models
 import astropy.modeling.fitting as fitting
-
-#import pysynphot as psyn
-#from pysynphot.spparser import parse_spec
-from pysynphot.reddening  import Extinction
+from astropy.modeling import Fittable1DModel
 
 from data_objects import SpectrumData
 
@@ -49,50 +42,6 @@ class powerlaw(models.PowerLaw1D):
         self.x_0.fixed = fix_x_0
 
 
-#class cmext(Fittable1DModel):
-#    """ Extinction model.
-#
-#    Parameters
-#    ----------
-#    ebv : float or `~astropy.units.quantity.Quantity`
-#        :math:`E(B-V)` value in magnitude.
-#    wavelengths : array_like, `~astropy.units.quantity.Quantity`, or `None`
-#        Wavelength values for sampling.
-#        If not a Quantity, assumed to be in Angstrom.
-#        If `None`, ``self.waveset`` is used.
-#
-#    Returns
-#    -------
-#    extcurve : `ExtinctionCurve`
-#        Empirical extinction curve.
-#
-#    Raises
-#    ------
-#    synphot.exceptions.SynphotError
-#        Invalid input.
-#    """
-#    ebv = Parameter()
-#
-#    def __init__(self, ebv, **kwargs):
-#        super(cmext, self).__init__(ebv=ebv, **kwargs)
-#
-#    @staticmethod
-#    def evaluate():
-#        global ebv
-#        rlaw = Extinction(ebv)
-#        extcurve = rlaw.extinction_curve(ebv)
-#
-#        return extcurve
-#
-#    @staticmethod
-#    def fit_deriv(x, slope, intercept):
-#        """Extinction model derivative with respect to parameters"""
-#        d_slope = x
-#        d_intercept = np.ones_like(x)
-#        return [d_slope, d_intercept]
-#        return None
-
-
 def read_file(file_name, regions=None):
     ''' Reads ASCII table with three columns (wavelength,
         flux, error). Can also read a table with wavelength
@@ -119,9 +68,13 @@ def read_file(file_name, regions=None):
     for line in f:
         columns = line.split()
 
+        if columns[0] == '#':
+            continue
+
         wa.append(float(columns[0]))
         fl.append(float(columns[1]))
-        er.append(float(columns[2]))
+        if len(columns) > 2:
+            er.append(float(columns[2]))
 
     wave = np.array(wa)
     flux = np.array(fl)
@@ -163,6 +116,9 @@ def read_file(file_name, regions=None):
         #
         # spectrum.mask = fmask
 
+    else:
+        fmask = np.ones(len(wave))
+
     return spectrum, fmask
 
 
@@ -184,12 +140,6 @@ def compoundModel(components):
     the list, None is returned.
 
     '''
-
-
-    a = cmext(0.3)
-    a.evaluate()
-
-
     if len(components) > 0:
         compound_model = components[0]
         for component in components[1:]:
@@ -200,7 +150,7 @@ def compoundModel(components):
         for component_index in range(len(components)):
             component = components[component_index]
             for parameter_name in component.param_names:
-                compound_model_parameter_name = compound_model._param_map_inverse[(component_index, parameter_name)]
+                compound_model_parameter_name = compound_model._param_map_inverse[(component_index,parameter_name)]
                 compound_model.fixed[compound_model_parameter_name] = components[component_index].fixed[parameter_name]
 
         return compound_model
@@ -306,19 +256,75 @@ def _chisq(x, y, e, mask, model, nfree):
     npoints = sum(mask)
     return math.sqrt(chisq / (npoints - nfree - 1))
 
-if __name__ == "__main__":
 
-    datadir = "../data/n5548/"
+def _print_model(compound_model, heading):
+    print(heading)
+    if isinstance(compound_model, Fittable1DModel):
+        print(compound_model)
+    else:
+        for model in compound_model:
+            print(model)
 
-    spectrum, mask = read_file(datadir + "n5548_mean_g130mb4.asc", regions=datadir + "n5548_lyalpha_sample.dat")
+
+def _print_output(x, fit_result, compound_model, mask, chisq_in, chisq_out, n_free_par, start_time, end_time):
+    # we need much better formatting here, but this
+    # should suffice as a rudimentary way to compare
+    # results with expected values.
+
+    _print_model(compound_model, "\n\n ********** INPUT MODEL ********** \n\n"),
+
+    _print_model(fit_result, "\n\n ********** FITTED MODEL ********** \n\n"),
+
+    print("\n\n\n ********** REDUCED CHI SQUARE ********** \n\n")
+    print("From input model:  %f" % chisq_in)
+    print("From output model: %f" % chisq_out)
+    print("Total data points: %d" % len(x))
+    print("Data points in wavelength ranges: %d" % np.sum(mask))
+    print("Number of free parameters: %d" % n_free_par)
+    elapsed_time = end_time - start_time
+    print("\nElapsed time in fitter engine: %f sec" % elapsed_time)
+
+
+def process_data(*args):
+    ''' Reads files with spectral data, wavelength ranges,
+    and spectral model. Fits a compound model, fits, and
+    prints the fitted results.
+
+    Parameters
+    ----------
+    datadir: str
+       file path to where the data is
+    datafile: str
+       spectral data file name
+    regionsfile: str
+       wavelength regions file name
+    modelfile: str
+       file name of spectral model with first guesses
+
+    '''
+    datadir = args[0][0]
+    datafile = args[0][1]
+    regionsfile = args[0][2]
+    modelfile = args[0][3]
+
+    rf_regions = None
+    if regionsfile:
+        rf_regions = datadir + regionsfile
+
+    spectrum, mask = read_file(datadir + datafile, regions=rf_regions)
+
     x = spectrum.x.data
     y = spectrum.y.data
     e = spectrum.e.data
+    w = mask
+    if len(e) > 0:
+        w /= e
 
-    w = mask / e
-
-    model = read_model(datadir + "sfn5548_lyalpha2")
-    compound_model = compoundModel(model)
+    model = read_model(datadir + modelfile)
+    if len(model) > 1:
+        compound_model = compoundModel(model)
+    else:
+        compound_model = model[0]
 
     fitter = fitting.LevMarLSQFitter()
 
@@ -326,34 +332,17 @@ if __name__ == "__main__":
     fit_result = fitter(compound_model, x, y, weights=w, acc=1.E-6, maxiter=1000)
     end_time = time.time()
 
-#    print '@@@@@@     line: 274  - ',fitter.fit_info['param_cov']
+    #    print '@@@@@@     line: 274  - ',fitter.fit_info['param_cov']
 
-    # chi-squared
+    # chi-sq
     fix = np.asarray(fit_result.fixed.values())
     n_free_par = sum(np.where(fix, 0, 1))
+    if len(e) > 0:
+        chisq_in = _chisq(x, y, e, mask, compound_model, n_free_par)
+        chisq_out = _chisq(x, y, e, mask, fit_result, n_free_par)
+    else:
+        chisq_in = 0.
+        chisq_out = 0.
 
-    chisq_in  = _chisq(x, y, e, mask, compound_model, n_free_par)
-    chisq_out = _chisq(x, y, e, mask, fit_result, n_free_par)
-
-    # we need much better formatting here, but this
-    # should suffice as a rudimentary way to compare
-    # results with expected values.
-    print("\n\n ********** INPUT MODEL ********** \n\n")
-    for model in compound_model:
-        print(model)
-    print("\n\n\n ********** FITTED MODEL ********** \n\n")
-    for model in fit_result:
-        print(model)
-    print("\n\n\n ********** REDUCED CHI SQUARE ********** \n\n")
-    print("From input model:  %f" % chisq_in)
-    print("From output model: %f" % chisq_out)
-    print("Total data points: %d" % len(x))
-    print("Data points in wavelength ranges: %d" % np.sum(mask))
-    print("Number of free parameters: %d" % n_free_par)
-
-    elapsed_time = end_time - start_time
-    print("\nElapsed time in fitter engine: %f sec" % elapsed_time)
-
-
-
+    _print_output(x, fit_result, compound_model, mask, chisq_in, chisq_out, n_free_par, start_time, end_time)
 
