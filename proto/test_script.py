@@ -5,8 +5,13 @@
 
 import numpy as np
 
+from astropy.modeling import Parameter, Fittable1DModel
 import astropy.modeling.models as models
 import astropy.modeling.fitting as fitting
+
+#import pysynphot as psyn
+#from pysynphot.spparser import parse_spec
+from pysynphot.reddening  import Extinction
 
 from data_objects import SpectrumData
 
@@ -42,6 +47,50 @@ class powerlaw(models.PowerLaw1D):
 
         self.amplitude.fixed = fix_amplitude
         self.x_0.fixed = fix_x_0
+
+
+#class cmext(Fittable1DModel):
+#    """ Extinction model.
+#
+#    Parameters
+#    ----------
+#    ebv : float or `~astropy.units.quantity.Quantity`
+#        :math:`E(B-V)` value in magnitude.
+#    wavelengths : array_like, `~astropy.units.quantity.Quantity`, or `None`
+#        Wavelength values for sampling.
+#        If not a Quantity, assumed to be in Angstrom.
+#        If `None`, ``self.waveset`` is used.
+#
+#    Returns
+#    -------
+#    extcurve : `ExtinctionCurve`
+#        Empirical extinction curve.
+#
+#    Raises
+#    ------
+#    synphot.exceptions.SynphotError
+#        Invalid input.
+#    """
+#    ebv = Parameter()
+#
+#    def __init__(self, ebv, **kwargs):
+#        super(cmext, self).__init__(ebv=ebv, **kwargs)
+#
+#    @staticmethod
+#    def evaluate():
+#        global ebv
+#        rlaw = Extinction(ebv)
+#        extcurve = rlaw.extinction_curve(ebv)
+#
+#        return extcurve
+#
+#    @staticmethod
+#    def fit_deriv(x, slope, intercept):
+#        """Extinction model derivative with respect to parameters"""
+#        d_slope = x
+#        d_intercept = np.ones_like(x)
+#        return [d_slope, d_intercept]
+#        return None
 
 
 def read_file(file_name, regions=None):
@@ -135,6 +184,12 @@ def compoundModel(components):
     the list, None is returned.
 
     '''
+
+
+    a = cmext(0.3)
+    a.evaluate()
+
+
     if len(components) > 0:
         compound_model = components[0]
         for component in components[1:]:
@@ -145,7 +200,7 @@ def compoundModel(components):
         for component_index in range(len(components)):
             component = components[component_index]
             for parameter_name in component.param_names:
-                compound_model_parameter_name = compound_model._param_map_inverse[(component_index,parameter_name)]
+                compound_model_parameter_name = compound_model._param_map_inverse[(component_index, parameter_name)]
                 compound_model.fixed[compound_model_parameter_name] = components[component_index].fixed[parameter_name]
 
         return compound_model
