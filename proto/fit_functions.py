@@ -266,6 +266,15 @@ def _print_model(compound_model, heading):
             print(model)
 
 
+def _print_sidebyside(model1, model2):
+    for k in range(len(model1._param_names)):
+        p_name = model1._param_names[k]
+        value1 = model1._parameters[k]
+        value2 = model2._parameters[k]
+        diff = (value2 - value1) / value1
+        print(p_name, value1, value2, diff)
+
+
 def _print_output(x, fit_result, compound_model, mask, chisq_in, chisq_out, n_free_par, start_time, end_time):
     # we need much better formatting here, but this
     # should suffice as a rudimentary way to compare
@@ -274,6 +283,8 @@ def _print_output(x, fit_result, compound_model, mask, chisq_in, chisq_out, n_fr
     _print_model(compound_model, "\n\n ********** INPUT MODEL ********** \n\n"),
 
     _print_model(fit_result, "\n\n ********** FITTED MODEL ********** \n\n"),
+
+    _print_sidebyside(compound_model, fit_result),
 
     print("\n\n\n ********** REDUCED CHI SQUARE ********** \n\n")
     print("From input model:  %f" % chisq_in)
