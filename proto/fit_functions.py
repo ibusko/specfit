@@ -2,6 +2,7 @@
 
 import numpy as np
 
+import astropy.constants as ac
 import astropy.modeling.models as models
 import astropy.modeling.fitting as fitting
 from astropy.modeling import Fittable1DModel
@@ -12,11 +13,15 @@ from data_objects import SpectrumData
 class gaussian(models.Gaussian1D):
     def __init__(self, *args):
 
-        amp  = args[0][0]
+        flux  = args[0][0]
         mean = args[1][0]
-        stdd = args[2][0]
+        width_kms = args[2][0]
 
-        super(gaussian, self).__init__(amp, mean, stdd)
+        # sigma = mean * width_kms / 705951.5
+        sigma = mean * width_kms / ac.c.to('km/s').value / 2.354820044
+        amp = flux / sigma * 0.3989
+
+        super(gaussian, self).__init__(amp, mean, sigma)
 
         fix_amplitude = args[0][1]
         fix_mean = args[1][1]
@@ -32,14 +37,17 @@ class powerlaw(models.PowerLaw1D):
 
         amp = args[0][0]
         x0  = args[1][0]
+        alpha  = args[2][0]
 
-        super(powerlaw, self).__init__(amp, x0)
+        super(powerlaw, self).__init__(amp, x0, alpha)
 
         fix_amplitude = args[0][1]
         fix_x_0 = args[1][1]
+        fix_alpha = args[2][1]
 
         self.amplitude.fixed = fix_amplitude
         self.x_0.fixed = fix_x_0
+        self.alpha.fixed = fix_alpha
 
 
 def read_file(file_name, regions=None):
@@ -330,6 +338,8 @@ def process_data(*args):
     w = mask
     if len(e) > 0:
         w /= e
+        max_w = np.max(w)
+        w /= max_w
 
     model = read_model(datadir + modelfile)
     if len(model) > 1:
