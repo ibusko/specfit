@@ -283,7 +283,7 @@ def _print_sidebyside(model1, model2):
         print(p_name, value1, value2, diff)
 
 
-def _print_output(x, fit_result, compound_model, mask, chisq_in, chisq_out, n_free_par, start_time, end_time):
+def _print_output(x, fit_result, compound_model, fitter, mask, chisq_in, chisq_out, n_free_par, start_time, end_time):
     # we need much better formatting here, but this
     # should suffice as a rudimentary way to compare
     # results with expected values.
@@ -300,6 +300,7 @@ def _print_output(x, fit_result, compound_model, mask, chisq_in, chisq_out, n_fr
     print("Total data points: %d" % len(x))
     print("Data points in wavelength ranges: %d" % np.sum(mask))
     print("Number of free parameters: %d" % n_free_par)
+    print("Number of iterations: %d" % fitter.fit_info['nfev'])
     elapsed_time = end_time - start_time
     print("\nElapsed time in fitter engine: %f sec" % elapsed_time)
 
@@ -350,7 +351,7 @@ def process_data(*args):
     fitter = fitting.LevMarLSQFitter()
 
     start_time = time.time()
-    fit_result = fitter(compound_model, x, y, weights=w, acc=1.E-6, maxiter=1000)
+    fit_result = fitter(compound_model, x, y, weights=w, acc=1.E-7, maxiter=1000)
     end_time = time.time()
 
     #    print '@@@@@@     line: 274  - ',fitter.fit_info['param_cov']
@@ -365,5 +366,5 @@ def process_data(*args):
         chisq_in = 0.
         chisq_out = 0.
 
-    _print_output(x, fit_result, compound_model, mask, chisq_in, chisq_out, n_free_par, start_time, end_time)
+    _print_output(x, fit_result, compound_model, fitter, mask, chisq_in, chisq_out, n_free_par, start_time, end_time)
 
