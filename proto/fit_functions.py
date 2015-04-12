@@ -258,7 +258,7 @@ def read_model(file_name):
 import math
 import time
 
-def _chisq(x, y, e, mask, model, nfree):
+def chisq(x, y, e, mask, model, nfree):
     chisq = np.power(((y - model(x)) / e), 2)
     chisq = np.sum(chisq * mask)
     npoints = sum(mask)
@@ -360,8 +360,8 @@ def process_data(*args):
     fix = np.asarray(fit_result.fixed.values())
     n_free_par = sum(np.where(fix, 0, 1))
     if len(e) > 0:
-        chisq_in = _chisq(x, y, e, mask, compound_model, n_free_par)
-        chisq_out = _chisq(x, y, e, mask, fit_result, n_free_par)
+        chisq_in = chisq(x, y, e, mask, compound_model, n_free_par)
+        chisq_out = chisq(x, y, e, mask, fit_result, n_free_par)
     else:
         chisq_in = 0.
         chisq_out = 0.
