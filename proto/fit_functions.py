@@ -2,52 +2,43 @@
 
 import numpy as np
 
-import astropy.constants as ac
 import astropy.modeling.models as models
 import astropy.modeling.fitting as fitting
-from astropy.modeling import Fittable1DModel
+from astropy.modeling import Fittable1DModel, Parameter
+import astropy.constants as ac
 
+import custom_models
 from data_objects import SpectrumData
 
 
-class gaussian(models.Gaussian1D):
-    def __init__(self, *args):
+class gaussian(Fittable1DModel):
+    norm = Parameter(default=1)
+    mean = Parameter(default=0)
+    fwhm = Parameter(default=1)
+    skew = Parameter(default=1)
 
-        flux  = args[0][0]
-        mean = args[1][0]
-        width_kms = args[2][0]
+    @staticmethod
+    def evaluate(x, norm, mean, fwhm, skew):
+        f = custom_models.bipolar_gaussian(norm[0], mean[0], fwhm[0], skew[0])
+        return f(x)
 
-        # sigma = mean * width_kms / 705951.5
-        sigma = mean * width_kms / ac.c.to('km/s').value / 2.354820044
-        amp = flux / sigma * 0.3989
 
-        super(gaussian, self).__init__(amp, mean, sigma)
+class ccmext(Fittable1DModel):
+    ebmv = Parameter(default=1.0)
+    rv = Parameter(default=3.5)
 
-        fix_amplitude = args[0][1]
-        fix_mean = args[1][1]
-        fix_stdd = args[2][1]
-
-        self.amplitude.fixed = fix_amplitude
-        self.mean.fixed = fix_mean
-        self.stddev.fixed = fix_stdd
+    @staticmethod
+    def evaluate(x, ebmv, rv):
+        f = custom_models.ccm(ebmv[0], rv[0])
+        return f(x/10000.)
 
 
 class powerlaw(models.PowerLaw1D):
     def __init__(self, *args):
-
-        amp = args[0][0]
-        x0  = args[1][0]
-        alpha  = args[2][0]
-
+        amp = args[0]
+        x0  = args[1]
+        alpha  = args[2]
         super(powerlaw, self).__init__(amp, x0, alpha)
-
-        fix_amplitude = args[0][1]
-        fix_x_0 = args[1][1]
-        fix_alpha = args[2][1]
-
-        self.amplitude.fixed = fix_amplitude
-        self.x_0.fixed = fix_x_0
-        self.alpha.fixed = fix_alpha
 
 
 def read_file(file_name, regions=None):
@@ -137,6 +128,9 @@ def compoundModel(components):
     to be modified eventually so as to enable any kind of allowable
     composition.
 
+    THIS BREAKS WHEN INCLUDING THE EXTINCTION FUNCTION. THE EXTINCTION
+    MUST BE MULTIPLIED INTO THE MODEL INSTEAD OF ADDED.
+
     Parameters
     ----------
     components: list
@@ -166,13 +160,24 @@ def compoundModel(components):
         return None
 
 
+def _set_fixed_flags(component, fixed):
+    for name in fixed:
+        parameter = getattr(component, name)
+        setattr(parameter, 'fixed', fixed[name])
+    return component
+
+
 # data used by the _build_component function.
 constructors = {
     'gaussian': 'gaussian(*pars)',
-    'powerlaw': 'powerlaw(*pars)'
+    'powerlaw': 'powerlaw(*pars)',
+    # 'ccmext': 'ccmext(*pars)'
 }
-discarded_parameters = {
-    'gaussian': 1,
+component_types = {
+    'powerlaw': ['amplitude', 'x_0', 'alpha'],
+    'gaussian': ['norm', 'mean', 'fwhm', 'skew'],
+    'ccmext':   ['ebmv', 'rv'],
+    'dampabs':  ['dummy', 'dummy', 'dummy'],
 }
 first = True
 
@@ -189,22 +194,22 @@ def _build_component(line, fp, component_type):
         name = tokens[0]
         npar = int(tokens[1])
         pars = []
+        fixed = {}
         for count in range(npar):
             line1 = fp.readline()
             tokens1 = line1.split()
             # parameter attributes
             value = float(tokens1[0])
-            fixed = int(tokens1[5]) < 0
-            pars.append( (value, fixed) )
-
-        # need to throw parameters away. astropy functions
-        # are not directly compatible with specfit models.
-        if component_type in discarded_parameters:
-            pars = pars[:-discarded_parameters[component_type]]
+            fixedp = int(tokens1[5]) < 0
+            # pars.append( (value, fixed) )
+            pars.append( value )
+            parname = component_types[component_type][count]
+            fixed[parname] = fixedp
 
         if component_type in constructors:
             constructor = constructors[component_type]
             component = eval(constructor)
+            _set_fixed_flags(component, fixed)
             return name, component
 
     return None, None
@@ -221,7 +226,7 @@ def read_model(file_name):
 
     Returns
     -------
-      list with instances of Fittable1DModel and Polynomial1DModel
+      list with instances of Fittable1DModel
 
     '''
     n_components = 0

@@ -1,3 +1,4 @@
+import astropy.constants as ac
 from astropy.modeling import custom_model
 import numpy as np
 
@@ -44,7 +45,9 @@ def ccm(wav, ebmv=1, rv=3.5):
     a[fuvmask] = -1.073 - 0.628 * xfuv + 0.137 * xfuv**2 - 0.070 * xfuv**3
     b[fuvmask] = 13.670 + 4.257 * xfuv - 0.420 * xfuv**2 + 0.374 * xfuv**3
 
-    return 10**(-0.4* ebmv *(rv * a + b))
+    result = 10 ** (-0.4 * ebmv * (rv * a + b))
+
+    return result
 
 
 @custom_model
