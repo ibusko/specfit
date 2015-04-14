@@ -342,7 +342,7 @@ def process_data(*args):
     x = spectrum.x.data
     y = spectrum.y.data
     e = spectrum.e.data
-    w = mask
+    w = mask.copy()
     if len(e) > 0:
         w /= e
         max_w = np.max(w)
