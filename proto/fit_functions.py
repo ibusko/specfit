@@ -5,7 +5,6 @@ import numpy as np
 import astropy.modeling.models as models
 import astropy.modeling.fitting as fitting
 from astropy.modeling import Fittable1DModel, Parameter
-import astropy.constants as ac
 
 import custom_models
 from data_objects import SpectrumData
@@ -33,6 +32,9 @@ class ccmext(Fittable1DModel):
         return f(x/10000.)
 
 
+# this is not strictly necessary since the powerlaw could be instantiated
+# directly from astropy. I keep it here as a placeholder for future
+# enhancements.
 class powerlaw(models.PowerLaw1D):
     def __init__(self, *args):
         amp = args[0]
@@ -201,7 +203,6 @@ def _build_component(line, fp, component_type):
             # parameter attributes
             value = float(tokens1[0])
             fixedp = int(tokens1[5]) < 0
-            # pars.append( (value, fixed) )
             pars.append( value )
             parname = component_types[component_type][count]
             fixed[parname] = fixedp
