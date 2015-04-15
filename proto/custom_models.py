@@ -1,9 +1,7 @@
 import astropy.constants as ac
-from astropy.modeling import custom_model
 import numpy as np
 
 
-@custom_model
 def ccm(wav, ebmv=1, rv=3.5):
     '''computes reddening correction according to the Cardelli, Clayton and Mathis 
     model (ApJ 1989 v345, p245)
@@ -50,7 +48,6 @@ def ccm(wav, ebmv=1, rv=3.5):
     return result
 
 
-@custom_model
 def bipolar_gaussian(x, norm=1., mean=0., fwhm=1., skew=1.):
     '''A two-faced gaussian based on the version in stsdas.contrib.specfit
 
