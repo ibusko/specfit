@@ -2,8 +2,6 @@
 
 import numpy as np
 
-import astropy.constants as ac
-
 import astropy.modeling.models as models
 import astropy.modeling.fitting as fitting
 from astropy.modeling import Fittable1DModel, Parameter
@@ -225,9 +223,15 @@ def _build_component(line, fp, component_type):
             # parameter attributes
             value = float(tokens1[0])
             fixedp = int(tokens1[5]) < 0
-            pars.append( value )
+            pars.append(value)
             parname = component_types[component_type][count]
             fixed[parname] = fixedp
+
+            # The  stepsize  also  serves the dual function of
+            # supplying the ratio factor when one parameter is
+            # linked  to  another.
+            tie_to = int(tokens1[5])
+            tie_factor = float(tokens1[3])
 
         if component_type in constructors:
             constructor = constructors[component_type]

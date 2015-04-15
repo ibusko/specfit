@@ -16,9 +16,12 @@ proto:   prototype code
 
            See also the readme file in data/simple/
 
+           Note that astropy cannot handle tied parameters yet. Tied parameters in Jerry's model
+           are being handled as free parameters for now.
+
 data:    data files
 
          n5548:  data from Trello board (Kriss NGC 5548 fitting)
-         simple: simple 1 and 2 components Gaussian fitting.
+         simple: Jeff's simple 1 and 2 components Gaussian fitting.
 
 
