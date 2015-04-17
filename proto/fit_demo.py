@@ -12,6 +12,7 @@ data = {'n5548':   ["../data/n5548/",  "n5548_mean_g130mb4.asc",  "n5548_lyalpha
         'obs2g_2': ["../data/simple/", "obs2g.dat",  None, "obs2g_model_2.dat"],
         'obs2gn_1':["../data/simple/", "obs2gn.dat", None, "obs2g_model_1.dat"],
         'obs2gn_2':["../data/simple/", "obs2gn.dat", None, "obs2g_model_2.dat"],
+        'obs2gn_2_tied':["../data/simple/", "obs2gn.dat", None, "obs2g_model_2_tied.dat"],
 
 }
 

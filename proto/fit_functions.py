@@ -56,11 +56,11 @@ class ccmext(Fittable1DModel):
 # directly from astropy. I keep it here as a placeholder for future
 # enhancements.
 class powerlaw(models.PowerLaw1D):
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
         amp = args[0]
         x0  = args[1]
         alpha  = args[2]
-        super(powerlaw, self).__init__(amp, x0, alpha)
+        super(powerlaw, self).__init__(amp, x0, alpha, **kwargs)
 
 
 def read_file(file_name, regions=None):
@@ -170,7 +170,9 @@ def compoundModel(components):
             # composition is for now just additive.
             compound_model += component
 
-        # set the 'fixed' flag in the compound model parameters.
+        # Set the 'fixed' flag in the compound model parameters.
+        # This bug fix is required under astropy 1.0. Under 1.0.1dev
+        # this can be removed.
         for component_index in range(len(components)):
             component = components[component_index]
             for parameter_name in component.param_names:
@@ -182,18 +184,52 @@ def compoundModel(components):
         return None
 
 
-def _set_fixed_flags(component, fixed):
-    for name in fixed:
-        parameter = getattr(component, name)
-        setattr(parameter, 'fixed', fixed[name])
+class Tie(object):
+    ''' Supplies the tie that links the value of a parameter to
+        the value of another parameter.
+    '''
+    def __init__(self, parameter_name, parent_index, factor):
+        self.parameter_name = parameter_name
+        self.parent_index = parent_index - 1 # specfit indices are 1-indexed!!!
+        self.factor = factor
+        # print("@@@@@@  file fit_functions.py; line 192 -  build tie object "),parent_index, factor
+
+    # Parameter ties are basically callable objects.
+    def __call__(self, *args, **kwargs):
+        compound_model = args[0]
+        parent_component = compound_model[self.parent_index]
+        parent_value = getattr(parent_component, self.parameter_name).value
+
+        # print("@@@@@@  file fit_functions.py; line 194 - "), self.parameter_name
+        # print("@@@@@@  file fit_functions.py; line 195 - "), self.parent_index
+        # print("@@@@@@  file fit_functions.py; line 196 - "), self.factor
+        # print("@@@@@@  file fit_functions.py; line 201 - "), getattr(parent_component, self.parameter_name)
+        # print("@@@@@@  file fit_functions.py; line 201 - "), parent_value
+
+        tied_value = parent_value * self.factor
+
+        # print("@@@@@@  file fit_functions.py; line 211 - tied value = "), tied_value
+
+        return tied_value
+
+
+def _set_special_attributes(component, fixed, ties):
+    for parameter_name in fixed:
+        parameter = getattr(component, parameter_name)
+        setattr(parameter, 'fixed', fixed[parameter_name])
+    for parameter_name in ties:
+        parameter = getattr(component, parameter_name)
+        tie_parent = ties[parameter_name][0]
+        tie_factor = ties[parameter_name][1]
+        setattr(parameter, 'tied', Tie(parameter_name, tie_parent, tie_factor))
     return component
 
 
 # data used by the _build_component function.
 constructors = {
-    'gaussian': 'gaussian(*pars)',
-    'powerlaw': 'powerlaw(*pars)',
-    # 'ccmext': 'ccmext(*pars)'
+    'gaussian': 'gaussian(*pars, name=name)',
+    'powerlaw': 'powerlaw(*pars, name=name)',
+    # 'ccmext': 'ccmext(*pars, name=name)'
 }
 component_types = {
     'powerlaw': ['amplitude', 'x_0', 'alpha'],
@@ -217,26 +253,34 @@ def _build_component(line, fp, component_type):
         npar = int(tokens[1])
         pars = []
         fixed = {}
+        ties = {}
         for count in range(npar):
             line1 = fp.readline()
             tokens1 = line1.split()
             # parameter attributes
             value = float(tokens1[0])
-            fixedp = int(tokens1[5]) < 0
+            fixed_flag = int(tokens1[5])
+            fixedp = fixed_flag < 0
             pars.append(value)
             parname = component_types[component_type][count]
             fixed[parname] = fixedp
 
-            # The  stepsize  also  serves the dual function of
-            # supplying the ratio factor when one parameter is
-            # linked  to  another.
-            tie_to = int(tokens1[5])
-            tie_factor = float(tokens1[3])
+            # The fixed flag also plays the role of a pointer
+            # that points to the parent component, when a
+            # parameter is linked to the same parameter in the
+            # parent.
+            # The step size also serves the dual function of
+            # supplying the ratio factor when a parameter is
+            # linked to another. Both the ratio and the index
+            # of the parent component are passed as a tuple
+            # to the function that establishes the ties.
+            if fixed_flag > 0:
+                ties[parname] = ( fixed_flag, float(tokens1[3]) )
 
         if component_type in constructors:
             constructor = constructors[component_type]
             component = eval(constructor)
-            _set_fixed_flags(component, fixed)
+            _set_special_attributes(component, fixed, ties)
             return name, component
 
     return None, None
