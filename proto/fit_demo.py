@@ -18,5 +18,7 @@ data = {'n5548':   ["../data/n5548/",  "n5548_mean_g130mb4.asc",  "n5548_lyalpha
 
 if __name__ == "__main__":
 
+    # test commit
+
     fit_functions.process_data(data[sys.argv[1]])
 
