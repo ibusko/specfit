@@ -184,6 +184,9 @@ def compoundModel(components):
         return None
 
 
+
+tie_call_count = 0
+
 class Tie(object):
     ''' Supplies the tie that links the value of a parameter to
         the value of another parameter.
@@ -207,6 +210,9 @@ class Tie(object):
         # print("@@@@@@  file fit_functions.py; line 201 - "), parent_value
 
         tied_value = parent_value * self.factor
+
+        global tie_call_count
+        tie_call_count += 1
 
         # print("@@@@@@  file fit_functions.py; line 211 - tied value = "), tied_value
 
@@ -353,21 +359,37 @@ def _print_model(compound_model, heading):
 def _print_sidebyside(model1, model2):
     for k in range(len(model1._param_names)):
         p_name = model1._param_names[k]
+
         value1 = model1._parameters[k]
         value2 = model2._parameters[k]
         diff = (value2 - value1) / value1
-        print(p_name, value1, value2, diff)
+
+        if model2.fixed[p_name]:
+            fixed = "F"
+        else:
+            fixed = " "
+
+        tie = model2.tied[p_name]
+        if tie:
+            parent_index = str(tie.parent_index - 1) # tie indices are 1-indexed!
+            tie_factpr = str(tie.factor)
+        else:
+            parent_index = " "
+            tie_factpr = " "
+
+        print("%11s   %9.2e      %9.2e       %7.2f          %s      %s   %s" % (p_name, value1, value2, diff, fixed, parent_index, tie_factpr))
 
 
-def _print_output(x, fit_result, compound_model, fitter, mask, chisq_in, chisq_out, n_free_par, start_time, end_time):
+def _print_output(x, fit_result, compound_model, fitter, mask, chisq_in, chisq_out, n_free_par, tie_calls, start_time, end_time):
     # we need much better formatting here, but this
     # should suffice as a rudimentary way to compare
     # results with expected values.
-
     _print_model(compound_model, "\n\n ********** INPUT MODEL ********** \n\n"),
-
     _print_model(fit_result, "\n\n ********** FITTED MODEL ********** \n\n"),
 
+    # better formatted output
+    print("\n\n\n ********** RELATIVE DIFFERENCE ********** \n")
+    print("parameter      input model    output model     difference   fixed    tie (index, factor)\n")
     _print_sidebyside(compound_model, fit_result),
 
     print("\n\n\n ********** REDUCED CHI SQUARE ********** \n\n")
@@ -376,7 +398,9 @@ def _print_output(x, fit_result, compound_model, fitter, mask, chisq_in, chisq_o
     print("Total data points: %d" % len(x))
     print("Data points in wavelength ranges: %d" % np.sum(mask))
     print("Number of free parameters: %d" % n_free_par)
+    print("\n")
     print("Number of iterations: %d" % fitter.fit_info['nfev'])
+    print("Number of tied parameter calls: %d" % tie_calls)
     elapsed_time = end_time - start_time
     print("\nElapsed time in fitter engine: %f sec" % elapsed_time)
 
@@ -427,10 +451,10 @@ def process_data(*args):
     fitter = fitting.LevMarLSQFitter()
 
     start_time = time.time()
-    fit_result = fitter(compound_model, x, y, weights=w, acc=1.E-7, maxiter=1000)
+    fit_result = fitter(compound_model, x, y, weights=w, acc=1.E-7, maxiter=10000)
     end_time = time.time()
 
-    #    print '@@@@@@     line: 274  - ',fitter.fit_info['param_cov']
+    print(fitter.fit_info['message'])
 
     # chi-sq
     fix = np.asarray(fit_result.fixed.values())
@@ -442,5 +466,6 @@ def process_data(*args):
         chisq_in = 0.
         chisq_out = 0.
 
-    _print_output(x, fit_result, compound_model, fitter, mask, chisq_in, chisq_out, n_free_par, start_time, end_time)
+    global tie_call_count
+    _print_output(x, fit_result, compound_model, fitter, mask, chisq_in, chisq_out, n_free_par, tie_call_count, start_time, end_time)
 
