@@ -195,7 +195,6 @@ class Tie(object):
         self.parameter_name = parameter_name
         self.parent_index = parent_index - 1 # specfit indices are 1-indexed!!!
         self.factor = factor
-        # print("@@@@@@  file fit_functions.py; line 192 -  build tie object "),parent_index, factor
 
     # Parameter ties are basically callable objects.
     def __call__(self, *args, **kwargs):
@@ -203,18 +202,10 @@ class Tie(object):
         parent_component = compound_model[self.parent_index]
         parent_value = getattr(parent_component, self.parameter_name).value
 
-        # print("@@@@@@  file fit_functions.py; line 194 - "), self.parameter_name
-        # print("@@@@@@  file fit_functions.py; line 195 - "), self.parent_index
-        # print("@@@@@@  file fit_functions.py; line 196 - "), self.factor
-        # print("@@@@@@  file fit_functions.py; line 201 - "), getattr(parent_component, self.parameter_name)
-        # print("@@@@@@  file fit_functions.py; line 201 - "), parent_value
-
         tied_value = parent_value * self.factor
 
         global tie_call_count
         tie_call_count += 1
-
-        # print("@@@@@@  file fit_functions.py; line 211 - tied value = "), tied_value
 
         return tied_value
 
@@ -235,7 +226,7 @@ def _set_special_attributes(component, fixed, ties):
 constructors = {
     'gaussian': 'gaussian(*pars, name=name)',
     'powerlaw': 'powerlaw(*pars, name=name)',
-    # 'ccmext': 'ccmext(*pars, name=name)'
+    'ccmext': 'ccmext(*pars, name=name)'
 }
 component_types = {
     'powerlaw': ['amplitude', 'x_0', 'alpha'],
@@ -371,7 +362,7 @@ def _print_sidebyside(model1, model2):
 
         tie = model2.tied[p_name]
         if tie:
-            parent_index = str(tie.parent_index - 1) # tie indices are 1-indexed!
+            parent_index = str(tie.parent_index)
             tie_factpr = str(tie.factor)
         else:
             parent_index = " "
@@ -451,7 +442,7 @@ def process_data(*args):
     fitter = fitting.LevMarLSQFitter()
 
     start_time = time.time()
-    fit_result = fitter(compound_model, x, y, weights=w, acc=1.E-7, maxiter=10000)
+    fit_result = fitter(compound_model, x, y, weights=w, acc=1.E-7, maxiter=100)
     end_time = time.time()
 
     print(fitter.fit_info['message'])
