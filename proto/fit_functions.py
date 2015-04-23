@@ -226,7 +226,7 @@ def _set_special_attributes(component, fixed, ties):
 constructors = {
     'gaussian': 'gaussian(*pars, name=name)',
     'powerlaw': 'powerlaw(*pars, name=name)',
-    'ccmext': 'ccmext(*pars, name=name)'
+    'ccmext':   'ccmext(*pars, name=name)'
 }
 component_types = {
     'powerlaw': ['amplitude', 'x_0', 'alpha'],
@@ -320,10 +320,11 @@ def read_model(file_name):
 
         # read each component
         if n_components > 0:
-            cname, component = _build_component(line, fp, component_types[component_type_index])
-            component_type_index += 1
-            if component:
-                result.append(component)
+            if component_type_index < len(component_types):
+                cname, component = _build_component(line, fp, component_types[component_type_index])
+                component_type_index += 1
+                if component:
+                    result.append(component)
 
     return result
 
