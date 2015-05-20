@@ -1,6 +1,9 @@
 import astropy.constants as ac
 import numpy as np
 
+import astropy.modeling.models as models
+from astropy.modeling import Fittable1DModel, Parameter
+
 
 def ccm(wav, ebmv=1, rv=3.5):
     '''computes reddening correction according to the Cardelli, Clayton and Mathis 
@@ -71,4 +74,65 @@ def bipolar_gaussian(x, norm=1., mean=0., fwhm=1., skew=1.):
     val[lowerx] = 2 * norm * np.exp(term[lowerx]) / sigma / sqrt2pi / (1. + skew)
     val[upperx] = 2 * norm * np.exp(term[upperx]/skew**2) / sigma / sqrt2pi / (1. + skew)
     return val
+
+
+
+# Classes that extend Fittable1DModel to provide for specfit's needs.
+
+class gaussian(Fittable1DModel):
+    '''A two-faced gaussian based on the version in stsdas.contrib.specfit
+
+    Effectively, this gaussian has two different sigmas on each side of the
+    mean. For values less than the mean, the sigma is as specified. For values
+    greater than the mean, the new sigma = skew * specified sigma
+
+    Units for fwhm are km/s
+    norm represents total flux (presumably in arbitrary units)
+    mean is called the centroid, but that seems misleading. It is the maximum
+    of the dual faced gaussian.
+
+    The units of mean and x should be consistent.
+
+    '''
+    norm = Parameter(default=1)
+    mean = Parameter(default=0)
+    fwhm = Parameter(default=1)
+    skew = Parameter(default=1)
+
+    @staticmethod
+    def evaluate(x, norm, mean, fwhm, skew):
+        return bipolar_gaussian(x, norm, mean, fwhm, skew)
+
+
+class ccmext(Fittable1DModel):
+    '''computes reddening correction according to the Cardelli, Clayton and Mathis
+    model (ApJ 1989 v345, p245)
+
+    x: wavelengths in Angstrom (expect a numpy array of wavelengths
+    ebmv: e(B-V) in magnitudes
+    rv:  Rv = A(V)/E(B-V)
+
+    '''
+    ebmv = Parameter(default=1.0)
+    rv = Parameter(default=3.5)
+
+    @staticmethod
+    def evaluate(x, ebmv, rv):
+        return ccm(x/10000., ebmv, rv)
+
+
+# these are not strictly necessary since the powerlaw could be instantiated
+# directly from astropy. I keep then here as placeholders for future
+# enhancements.
+class powerlaw(models.PowerLaw1D):
+    def __init__(self, amp, x_0, alpha, **kwargs):
+        super(powerlaw, self).__init__(amp, x_0, alpha, **kwargs)
+
+class powerlaw_2(models.PowerLaw1D):
+    def __init__(self, *args, **kwargs):
+        amp = args[0]
+        x0  = args[1]
+        alpha  = args[2]
+        super(powerlaw_2, self).__init__(amp, x0, alpha, **kwargs)
+
 
