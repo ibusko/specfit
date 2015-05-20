@@ -1,6 +1,6 @@
 # Model for n5548 in new format
 
-from custom_models import gaussian, powerlaw
+from custom_models import gaussian, powerlaw, ccmext
 
 model1 = \
     powerlaw(name = 'powerlaw1',
@@ -11,6 +11,15 @@ model1 = \
                        'x_0':   (0., 1.00E-11),
                        'alpha': (-5., 5.)},
              fixed = {'x_0': True}
+             ) \
+* \
+    ccmext(name = 'extinction',
+           ebmv = 0.01713,
+           rv = 3.1,
+           bounds = {'ebmv': (0., 1.),
+                     'rv':   (3.1, 3.1)},
+           fixed = {'ebmv': True,
+                    'rv': True}
              ) \
 + \
     gaussian(name = 'C III 1176',
