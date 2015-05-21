@@ -9,58 +9,17 @@ from astropy.modeling import Fittable1DModel, Parameter
 import custom_models
 from data_objects import SpectrumData
 
+import sfn5548_lyalpha_all_no_extinction as models
 
-class gaussian(Fittable1DModel):
-    '''A two-faced gaussian based on the version in stsdas.contrib.specfit
-
-    Effectively, this gaussian has two different sigmas on each side of the
-    mean. For values less than the mean, the sigma is as specified. For values
-    greater than the mean, the new sigma = skew * specified sigma
-
-    Units for fwhm are km/s
-    norm represents total flux (presumably in arbitrary units)
-    mean is called the centroid, but that seems misleading. It is the maximum
-    of the dual faced gaussian.
-
-    The units of mean and x should be consistent.
-
-    '''
-    norm = Parameter(default=1)
-    mean = Parameter(default=0)
-    fwhm = Parameter(default=1)
-    skew = Parameter(default=1)
-
-    @staticmethod
-    def evaluate(x, norm, mean, fwhm, skew):
-        return custom_models.bipolar_gaussian(x, norm, mean, fwhm, skew)
-
-
-class ccmext(Fittable1DModel):
-    '''computes reddening correction according to the Cardelli, Clayton and Mathis
-    model (ApJ 1989 v345, p245)
-
-    x: wavelengths in Angstrom (expect a numpy array of wavelengths
-    ebmv: e(B-V) in magnitudes
-    rv:  Rv = A(V)/E(B-V)
-
-    '''
-    ebmv = Parameter(default=1.0)
-    rv = Parameter(default=3.5)
-
-    @staticmethod
-    def evaluate(x, ebmv, rv):
-        return custom_models.ccm(x/10000., ebmv, rv)
-
-
-# this is not strictly necessary since the powerlaw could be instantiated
-# directly from astropy. I keep it here as a placeholder for future
-# enhancements.
-class powerlaw(models.PowerLaw1D):
-    def __init__(self, *args, **kwargs):
-        amp = args[0]
-        x0  = args[1]
-        alpha  = args[2]
-        super(powerlaw, self).__init__(amp, x0, alpha, **kwargs)
+# 0# import test as models
+#
+# print '@@@@@@     line: 13  - ',models.model1
+#
+# x = np.array([1200., 1201., 1202., 1203.])
+#
+# y = models.model1(x)
+#
+# print '@@@@@@     line: 19  - ',y
 
 
 def read_file(file_name, regions=None):
@@ -164,24 +123,27 @@ def compoundModel(components):
     the list, None is returned.
 
     '''
-    if len(components) > 0:
-        compound_model = components[0]
-        for component in components[1:]:
-            # composition is for now just additive.
-            compound_model += component
 
-        # Set the 'fixed' flag in the compound model parameters.
-        # This bug fix is required under astropy 1.0. Under 1.0.1dev
-        # this can be removed.
-        for component_index in range(len(components)):
-            component = components[component_index]
-            for parameter_name in component.param_names:
-                compound_model_parameter_name = compound_model._param_map_inverse[(component_index,parameter_name)]
-                compound_model.fixed[compound_model_parameter_name] = components[component_index].fixed[parameter_name]
+    return models.model1
 
-        return compound_model
-    else:
-        return None
+    # if len(components) > 0:
+    #     compound_model = components[0]
+    #     for component in components[1:]:
+    #         # composition is for now just additive.
+    #         compound_model += component
+    #
+    #     # Set the 'fixed' flag in the compound model parameters.
+    #     # This bug fix is required under astropy 1.0. Under 1.0.1dev
+    #     # this can be removed.
+    #     for component_index in range(len(components)):
+    #         component = components[component_index]
+    #         for parameter_name in component.param_names:
+    #             compound_model_parameter_name = compound_model._param_map_inverse[(component_index,parameter_name)]
+    #             compound_model.fixed[compound_model_parameter_name] = components[component_index].fixed[parameter_name]
+    #
+    #     return compound_model
+    # else:
+    #     return None
 
 
 
@@ -224,9 +186,9 @@ def _set_special_attributes(component, fixed, ties):
 
 # data used by the _build_component function.
 constructors = {
-    'gaussian': 'gaussian(*pars, name=name)',
-    'powerlaw': 'powerlaw(*pars, name=name)',
-    'ccmext':   'ccmext(*pars, name=name)'
+    'gaussian': 'custom_models.gaussian(*pars, name=name)',
+    'powerlaw': 'custom_models.powerlaw_2(*pars, name=name)',
+    'ccmext': 'custom_models.ccmext(*pars, name=name)'
 }
 component_types = {
     'powerlaw': ['amplitude', 'x_0', 'alpha'],
@@ -349,8 +311,8 @@ def _print_model(compound_model, heading):
 
 
 def _print_sidebyside(model1, model2):
-    for k in range(len(model1._param_names)):
-        p_name = model1._param_names[k]
+    for k in range(len(model1.param_names)):
+        p_name = model1.param_names[k]
 
         value1 = model1._parameters[k]
         value2 = model2._parameters[k]
@@ -362,7 +324,7 @@ def _print_sidebyside(model1, model2):
             fixed = " "
 
         tie = model2.tied[p_name]
-        if tie:
+        if tie and isinstance(tie, Tie):
             parent_index = str(tie.parent_index)
             tie_factpr = str(tie.factor)
         else:
