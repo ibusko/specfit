@@ -18,7 +18,7 @@ model1 = \
            rv = 3.1,
            bounds = {'ebmv': (0., 1.),
                      'rv':   (3.1, 3.1)},
-           fixed = {'ebmv': True,
+           fixed = {'ebmv': False,
                     'rv': True}
              ) \
 + \

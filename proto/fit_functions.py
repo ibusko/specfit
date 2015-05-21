@@ -2,24 +2,13 @@
 
 import numpy as np
 
-import astropy.modeling.models as models
 import astropy.modeling.fitting as fitting
 from astropy.modeling import Fittable1DModel, Parameter
 
-import custom_models
 from data_objects import SpectrumData
 
-import sfn5548_lyalpha_all_no_extinction as models
-
-# 0# import test as models
-#
-# print '@@@@@@     line: 13  - ',models.model1
-#
-# x = np.array([1200., 1201., 1202., 1203.])
-#
-# y = models.model1(x)
-#
-# print '@@@@@@     line: 19  - ',y
+import custom_models
+import n5548_models as models
 
 
 def read_file(file_name, regions=None):
