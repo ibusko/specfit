@@ -4,15 +4,15 @@ from custom_models import gaussian, powerlaw, ccmext
 
 model1 = \
     powerlaw(name = 'powerlaw1',
-             amp =   6.586200E-14,
-             x_0 =   1000.0,
+             amplitude = 6.586200E-14,
+             x_0 = 1000.0,
              alpha = 0.4819233,
              bounds = {'amp':   (0., 1.00E-11),
                        'x_0':   (0., 1.00E-11),
                        'alpha': (-5., 5.)},
              fixed = {'x_0': True}
              ) \
-* \
+* (\
     ccmext(name = 'extinction',
            ebmv = 0.01713,
            rv = 3.1,
@@ -35,7 +35,7 @@ model1 = \
                       'fwhm': True,
                       'skew': True},
              ) \
-+ \
+) + \
     gaussian(name = 'Si III 1206',
              norm = 1.438015E-14,
              mean = 1226.392,
