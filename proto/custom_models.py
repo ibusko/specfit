@@ -125,8 +125,11 @@ class ccmext(Fittable1DModel):
 # directly from astropy. I keep then here as placeholders for future
 # enhancements.
 class powerlaw(models.PowerLaw1D):
-    def __init__(self, amp, x_0, alpha, **kwargs):
-        super(powerlaw, self).__init__(amp, x_0, alpha, **kwargs)
+    # Parameter names must be identical with the superclass'.
+    # This requirement comes from the 'guimodel' project, in
+    # which we deal with the innards of spectral components.
+    def __init__(self, amplitude, x_0, alpha, **kwargs):
+        super(powerlaw, self).__init__(amplitude, x_0, alpha, **kwargs)
 
 class powerlaw_2(models.PowerLaw1D):
     def __init__(self, *args, **kwargs):
