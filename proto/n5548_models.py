@@ -12,7 +12,7 @@ model1 = \
                        'alpha': (-5., 5.)},
              fixed = {'x_0': True}
              ) \
-* (\
+* \
     ccmext(name = 'extinction',
            ebmv = 0.01713,
            rv = 3.1,
@@ -35,7 +35,7 @@ model1 = \
                       'fwhm': True,
                       'skew': True},
              ) \
-) + \
++ \
     gaussian(name = 'Si III 1206',
              norm = 1.438015E-14,
              mean = 1226.392,

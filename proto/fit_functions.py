@@ -113,26 +113,26 @@ def compoundModel(components):
 
     '''
 
-    return models.model1
+    # return models.model1
 
-    # if len(components) > 0:
-    #     compound_model = components[0]
-    #     for component in components[1:]:
-    #         # composition is for now just additive.
-    #         compound_model += component
-    #
-    #     # Set the 'fixed' flag in the compound model parameters.
-    #     # This bug fix is required under astropy 1.0. Under 1.0.1dev
-    #     # this can be removed.
-    #     for component_index in range(len(components)):
-    #         component = components[component_index]
-    #         for parameter_name in component.param_names:
-    #             compound_model_parameter_name = compound_model._param_map_inverse[(component_index,parameter_name)]
-    #             compound_model.fixed[compound_model_parameter_name] = components[component_index].fixed[parameter_name]
-    #
-    #     return compound_model
-    # else:
-    #     return None
+    if len(components) > 0:
+        compound_model = components[0]
+        for component in components[1:]:
+            # composition is for now just additive.
+            compound_model += component
+
+        # Set the 'fixed' flag in the compound model parameters.
+        # This bug fix is required under astropy 1.0. Under 1.0.1dev
+        # this can be removed.
+        for component_index in range(len(components)):
+            component = components[component_index]
+            for parameter_name in component.param_names:
+                compound_model_parameter_name = compound_model._param_map_inverse[(component_index,parameter_name)]
+                compound_model.fixed[compound_model_parameter_name] = components[component_index].fixed[parameter_name]
+
+        return compound_model
+    else:
+        return None
 
 
 
@@ -394,10 +394,20 @@ def process_data(*args):
     fitter = fitting.LevMarLSQFitter()
 
     start_time = time.time()
-    fit_result = fitter(compound_model, x, y, weights=w, acc=1.E-7, maxiter=100)
+    fit_result = fitter(compound_model, x, y, weights=w, acc=1.E-27, maxiter=6000)
     end_time = time.time()
 
     print(fitter.fit_info['message'])
+
+    cov = fitter.fit_info['param_cov']
+    print(cov)
+
+    # Parameter errors will be the square root of the diagonal elements.
+    #
+    # The order of the diagonal elements is the same as in compound_model.param_names
+    #
+    # The mapping is
+
 
     # chi-sq
     fix = np.asarray(fit_result.fixed.values())
