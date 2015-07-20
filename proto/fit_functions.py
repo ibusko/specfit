@@ -418,6 +418,15 @@ def process_data(*args):
                 fit_errors[param_name] = math.sqrt(cov[i,i])
                 i += 1
 
+    # Must map compound model's internal parameter names to
+    # individual component names.
+
+    param_errors = {}
+    for param_name in fit_errors.keys():
+        index, target_param_name = fit_result._param_map[param_name]
+        component_name = fit_result._submodels_names[index]
+        param_errors[(component_name, target_param_name)] = fit_errors[param_name]
+
     # chi-sq
     if 'fixed' in fit_result.parameter_constraints:
         fix = np.asarray(fit_result.fixed.values())
