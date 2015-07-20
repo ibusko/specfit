@@ -401,17 +401,38 @@ def process_data(*args):
 
     cov = fitter.fit_info['param_cov']
     print(cov)
+    for i in range(cov.shape[0]):
+        print cov[i,i]
 
     # Parameter errors will be the square root of the diagonal elements.
     #
-    # The order of the diagonal elements is the same as in compound_model.param_names
-    #
-    # The mapping is
+    # The order of the diagonal elements is the same as in fit_result.param_names
 
+    fit_errors = {}
+    i = 0
+    if cov is not None:
+        for param_name in fit_result.param_names:
+            fixed = fit_result.fixed[param_name]
+            tied = fit_result.tied[param_name]
+            if not fixed and not tied:
+                fit_errors[param_name] = math.sqrt(cov[i,i])
+                i += 1
 
     # chi-sq
-    fix = np.asarray(fit_result.fixed.values())
-    n_free_par = sum(np.where(fix, 0, 1))
+    if 'fixed' in fit_result.parameter_constraints:
+        fix = np.asarray(fit_result.fixed.values())
+        n_fixed_parameters = np.sum(np.where(fix, 1, 0))
+    else:
+        n_fixed_parameters = 0
+
+    if 'tied' in fit_result.parameter_constraints:
+        tie = np.asarray(fit_result.tied.values())
+        n_tied_parameters = np.sum(np.where(tie, 1, 0))
+    else:
+        n_tied_parameters = 0
+
+    n_free_par = len(fit_result.parameters) - n_fixed_parameters - n_tied_parameters
+
     if len(e) > 0:
         chisq_in = chisq(x, y, e, mask, compound_model, n_free_par)
         chisq_out = chisq(x, y, e, mask, fit_result, n_free_par)
@@ -419,6 +440,7 @@ def process_data(*args):
         chisq_in = 0.
         chisq_out = 0.
 
+    # report results
     global tie_call_count
     _print_output(x, fit_result, compound_model, fitter, mask, chisq_in, chisq_out, n_free_par, tie_call_count, start_time, end_time)
 
