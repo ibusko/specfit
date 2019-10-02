@@ -402,7 +402,7 @@ def process_data(*args):
     cov = fitter.fit_info['param_cov']
     print(cov)
     for i in range(cov.shape[0]):
-        print cov[i,i]
+        print(cov[i,i])
 
     # Parameter errors will be the square root of the diagonal elements.
     #
