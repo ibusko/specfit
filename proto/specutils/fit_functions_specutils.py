@@ -5,10 +5,13 @@ import numpy as np
 import astropy.modeling.fitting as fitting
 from astropy.modeling import Fittable1DModel, Parameter
 
-from data_objects import SpectrumData
+from specutils import Spectrum1D, SpectralRegion
+import astropy.units as u
 
-import custom_models
-import n5548_models as models
+# from data_objects import SpectrumData
+
+# import custom_models
+# import n5548_models as models
 
 
 def read_file(file_name, regions=None):
@@ -49,46 +52,47 @@ def read_file(file_name, regions=None):
     flux = np.array(fl)
     error = np.array(er)
 
-    spectrum = SpectrumData()
+    spectrum = Spectrum1D(flux=flux*u.Jy, spectral_axis=wave*u.um)
 
-    spectrum.set_x(wave, unit='Angstrom')
-    spectrum.set_y(flux, unit='erg.s^-1.cm^-2.Angstrom^-1')
-    spectrum.set_e(error, unit='erg.s^-1.cm^-2.Angstrom^-1')
+    # spectrum.set_x(wave, unit='Angstrom')
+    # spectrum.set_y(flux, unit='erg.s^-1.cm^-2.Angstrom^-1')
+    # spectrum.set_e(error, unit='erg.s^-1.cm^-2.Angstrom^-1')
+    #
+    # # Note that SpectrumData does not use masked arrays.
+    # if regions:
+    #     mask = np.zeros(len(wave))
+    #
+    #     f = open(regions, 'r')
+    #     for line in f:
+    #         region = line.split()
+    #         index1 = np.where(wave > float(region[0]))
+    #         index2 = np.where(wave <  float(region[1]))
+    #
+    #         mask1 = np.zeros(len(wave))
+    #         mask1[index1] = 1
+    #         mask2 = np.zeros(len(wave))
+    #         mask2[index2] = 1
+    #
+    #         mask3 = np.logical_and(mask1, mask2)
+    #         mask = np.logical_or(mask, mask3)
+    #
+    #     # Make the boolean mask into a float array so it can
+    #     # be used directly as a weight array by the fitter.
+    #     fmask = np.where(mask, 1.0, 0.0)
+    #
+    #     # Can't set a mask in a NDData object. The mask setting causes
+    #     # the shape of the ndarray inside the NDData object to change to
+    #     # an (apparently) arbitrary value. For now, we pass the mask
+    #     # as an independent entity so we can continue to progress on
+    #     # the main task.
+    #     #
+    #     # spectrum.mask = fmask
+    #
+    # else:
+    #     fmask = np.ones(len(wave))
 
-    # Note that SpectrumData does not use masked arrays.
-    if regions:
-        mask = np.zeros(len(wave))
-
-        f = open(regions, 'r')
-        for line in f:
-            region = line.split()
-            index1 = np.where(wave > float(region[0]))
-            index2 = np.where(wave <  float(region[1]))
-
-            mask1 = np.zeros(len(wave))
-            mask1[index1] = 1
-            mask2 = np.zeros(len(wave))
-            mask2[index2] = 1
-
-            mask3 = np.logical_and(mask1, mask2)
-            mask = np.logical_or(mask, mask3)
-
-        # Make the boolean mask into a float array so it can
-        # be used directly as a weight array by the fitter.
-        fmask = np.where(mask, 1.0, 0.0)
-
-        # Can't set a mask in a NDData object. The mask setting causes
-        # the shape of the ndarray inside the NDData object to change to
-        # an (apparently) arbitrary value. For now, we pass the mask
-        # as an independent entity so we can continue to progress on
-        # the main task.
-        #
-        # spectrum.mask = fmask
-
-    else:
-        fmask = np.ones(len(wave))
-
-    return spectrum, fmask
+    # return spectrum, fmask
+    return spectrum
 
 
 def compoundModel(components):
