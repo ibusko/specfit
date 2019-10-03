@@ -4,6 +4,7 @@ import numpy as np
 
 import astropy.modeling.fitting as fitting
 from astropy.modeling import Fittable1DModel, Parameter
+from astropy.nddata import StdDevUncertainty
 
 from specutils import Spectrum1D, SpectralRegion
 import astropy.units as u
@@ -54,7 +55,8 @@ def read_file(file_name, regions=None,
     flux = np.array(fl) * flux_units
     error = np.array(er) * flux_units
 
-    spectrum = Spectrum1D(flux=flux, spectral_axis=wave)
+    err = StdDevUncertainty(error)
+    spectrum = Spectrum1D(flux=flux, spectral_axis=wave, uncertainty=err)
 
     if regions:
 
