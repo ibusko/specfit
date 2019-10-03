@@ -16,7 +16,7 @@ import astropy.units as u
 
 def read_file(file_name, regions=None,
               flux_units=u.Jy,
-              spectral_axis_units=u.um):
+              spectral_axis_units=u.AA):
 
     ''' Reads ASCII table with three columns (wavelength,
         flux, error). Can also read a table with wavelength
