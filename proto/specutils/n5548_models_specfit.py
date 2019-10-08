@@ -2,29 +2,41 @@
 #
 # This was further modified so it can be directly ingested by
 # the specutils' fit_lines function. This function does not
-# accept compound models made out of subclasses of the
+# seem to accept compound models made out of subclasses of the
 # original astropy.modelling.models classes, as defined in
-# n5548_models.py
+# n5548_models.py. It has to be build out of classes taken
+# directly from astropy.modeling.models, and not subclassed
+# from Fittable1DModel.
+
+#
+# This model differs from the original model specified in
+# n5548_models.py, by lacking a ccmext extinction component.
+# It also lacks the bounds and ties associated with each
+# component's parameters.
 
 from astropy import units as u
 from astropy.units import Quantity
 import astropy.modeling.models as models
 
 
+# convert km/s to wavelength range in Angstrom
+
+def kms2Angstrom(value, x0):
+    return (Quantity(value *u.km/u.s).to(u.Angstrom, equivalencies=u.doppler_optical(x0*u.Angstrom))).value - x0
+
+
 # convert fwhm in km/s (as in Kriss's model specs)
 # to stddedv in Angstrom (as in specutils/astropy)
 
-def fwhm2stddev(stddev, mean):
-    return (Quantity(stddev *u.km/u.s).to(u.Angstrom, equivalencies=u.doppler_optical(mean * u.Angstrom)) - (mean * u.Angstrom)).value / 2.355
+def fwhm2stddev(fwhm, mean):
+    return kms2Angstrom(fwhm, mean) / 2.355
 
 
 # convert flux (as in Kriss's model specs)
 # to amplitude (as in specutils/astropy)
 
 def flux2amplitude(flux, mean, fwhm):
-    # first, convert width from km/s to A
-    width = Quantity(fwhm *u.km/u.s).to(u.Angstrom, equivalencies=u.doppler_optical(mean *u.Angstrom)).value
-    return flux / width * 0.937415
+    return flux / kms2Angstrom(fwhm, mean) * 0.937415
 
 
 model1 = \
