@@ -19,7 +19,8 @@ Contents of this package:
 proto:   prototype code
 
          linefit_demo_specutils.ipynb  - specutil's line finding and line fitting
-         specfit_demo_specutils.ipynb  - astropy's model fitting
+         specfit_demo_specutils.ipynb  - astropy's model fitting using specutils data
+                                         structures
 
 data:    data files
 
