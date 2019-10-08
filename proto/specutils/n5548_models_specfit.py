@@ -11,14 +11,20 @@ from astropy.units import Quantity
 import astropy.modeling.models as models
 
 
-# TODO norm must be converted to amplitude
+# convert fwhm in km/s (as in Kriss's model specs)
+# to stddedv in Angstrom (as in specutils/astropy)
+
+def fwhm2stddev(stddev, mean):
+    return (Quantity(stddev *u.km/u.s).to(u.Angstrom, equivalencies=u.doppler_optical(mean * u.Angstrom)) - (mean * u.Angstrom)).value / 2.355
 
 
-# function for converting stddev from km/s (as in Kriss's model
-# specs) to Angstrom (as in specutils/astropy)
+# convert flux (as in Kriss's model specs)
+# to amplitude (as in specutils/astropy)
 
-def stddev_function(stddev, mean):
-    return (Quantity(stddev * u.km / u.s).to(u.Angstrom, equivalencies=u.doppler_optical(mean * u.Angstrom)) - (mean * u.Angstrom)).value
+def flux2amplitude(flux, mean, fwhm):
+    # first, convert width from km/s to A
+    width = Quantity(fwhm *u.km/u.s).to(u.Angstrom, equivalencies=u.doppler_optical(mean *u.Angstrom)).value
+    return flux / width * 0.937415
 
 
 model1 = \
@@ -29,121 +35,121 @@ model1 = \
              ) \
 + \
     models.Gaussian1D(
-             amplitude = 2.000000E-14,
+             amplitude = flux2amplitude(2.000000E-14, 1195.006, 861.4926),
              mean = 1195.006,
-             stddev = stddev_function(861.4926, 1195.006)
+             stddev = fwhm2stddev(861.4926, 1195.006)
              ) \
 + \
     models.Gaussian1D(
-             amplitude = 1.438015E-14,
+             amplitude=flux2amplitude(1.438015E-14, 1226.392, 861.4926),
              mean = 1226.392,
-             stddev = stddev_function(861.4926, 1226.392)
+             stddev = fwhm2stddev(861.4926, 1226.392)
              ) \
 + \
     models.Gaussian1D(
-             amplitude = 2.020000E-13,
+             amplitude=flux2amplitude(2.020000E-13, 1236.729, 255.4998),
              mean = 1236.729,
-             stddev = stddev_function(255.4998, 1236.729)
+             stddev = fwhm2stddev(255.4998, 1236.729)
              ) \
 + \
     models.Gaussian1D(
-             amplitude = 5.474183E-13,
+             amplitude=flux2amplitude(5.474183E-13, 1235.996, 861.4926),
              mean = 1235.996,
-             stddev = stddev_function(861.4926, 1235.996)
+             stddev = fwhm2stddev(861.4926, 1235.996)
              ) \
 + \
     models.Gaussian1D(
-             amplitude = 3.948799E-12,
+             amplitude=flux2amplitude(3.948799E-12, 1235.138, 3040.59),
              mean = 1235.138,
-             stddev = stddev_function(3040.59, 1235.138)
+             stddev = fwhm2stddev(3040.59, 1235.138)
              ) \
 + \
     models.Gaussian1D(
-             amplitude = 2.156964E-12,
+             amplitude=flux2amplitude(2.156964E-12, 1231.589, 8133.099),
              mean = 1231.589,
-             stddev = stddev_function(8133.099, 1231.589)
+             stddev = fwhm2stddev(8133.099, 1231.589)
              ) \
 + \
     models.Gaussian1D(
-             amplitude = 0.536853E-12,
+             amplitude=flux2amplitude(0.536853E-12, 1237.643, 18183.71),
              mean = 1237.643,
-             stddev = stddev_function(18183.71, 1237.643)
+             stddev = fwhm2stddev(18183.71, 1237.643)
              ) \
 + \
     models.Gaussian1D(
-             amplitude = 1.217935E-14,
+             amplitude=flux2amplitude(1.217935E-14, 1259.753, 255.4998),
              mean = 1259.753,
-             stddev = stddev_function(255.4998, 1259.753)
+             stddev = fwhm2stddev(255.4998, 1259.753)
              ) \
 + \
     models.Gaussian1D(
-             amplitude = 1.217935E-14,
+             amplitude=flux2amplitude(1.217935E-14, 1263.803, 255.4998),
              mean = 1263.803,
-             stddev = stddev_function(255.4998, 1263.803)
+             stddev = fwhm2stddev(255.4998, 1263.803)
              ) \
 + \
     models.Gaussian1D(
-             amplitude = 6.219548E-15,
+             amplitude=flux2amplitude(6.219548E-15, 1259.533, 861.4926),
              mean = 1259.533,
-             stddev = stddev_function(861.4926, 1259.533)
+             stddev = fwhm2stddev(861.4926, 1259.533)
              ) \
 + \
     models.Gaussian1D(
-             amplitude = 6.219548E-15,
+             amplitude=flux2amplitude(6.219548E-15, 1263.582, 861.4926),
              mean = 1263.582,
-             stddev = stddev_function(861.4926, 1263.582)
+             stddev = fwhm2stddev(861.4926, 1263.582)
              ) \
 + \
     models.Gaussian1D(
-             amplitude = 0.221692E-13,
+             amplitude=flux2amplitude(0.221692E-13, 1258.659, 3040.59),
              mean = 1258.659,
-             stddev = stddev_function(3040.59, 1258.659)
+             stddev = fwhm2stddev(3040.59, 1258.659)
              ) \
 + \
     models.Gaussian1D(
-             amplitude = 2.221692E-13,
+             amplitude=flux2amplitude(2.221692E-13, 1262.705, 3040.59),
              mean = 1262.705,
-             stddev = stddev_function(3040.59, 1262.705)
+             stddev = fwhm2stddev(3040.59, 1262.705)
              ) \
 + \
     models.Gaussian1D(
-             amplitude = 3.185217E-13,
+             amplitude=flux2amplitude(3.185217E-13, 1255.042, 8133.099),
              mean = 1255.042,
-             stddev = stddev_function(8133.099, 1255.042)
+             stddev = fwhm2stddev(8133.099, 1255.042)
              ) \
 + \
     models.Gaussian1D(
-             amplitude = 1.185217E-13,
+             amplitude=flux2amplitude(1.185217E-13, 1259.077, 8133.099),
              mean = 1259.077,
-             stddev = stddev_function(8133.099, 1259.077)
+             stddev = fwhm2stddev(8133.099, 1259.077)
              ) \
 + \
     models.Gaussian1D(
-             amplitude = 2.287816E-13,
+             amplitude=flux2amplitude(2.287816E-13, 1263.24, 18183.71),
              mean = 1263.24,
-             stddev = stddev_function(18183.71, 1263.24)
+             stddev = fwhm2stddev(18183.71, 1263.24)
              ) \
 + \
     models.Gaussian1D(
-             amplitude = -1.000000E-15,
+             amplitude=flux2amplitude(-1.000000E-15, 1194., 3683.102),
              mean = 1194.,
-             stddev = stddev_function(3683.102, 1194.)
+             stddev = fwhm2stddev(3683.102, 1194.)
              ) \
 + \
     models.Gaussian1D(
-             amplitude = -5.349239E-13,
+             amplitude=flux2amplitude(-5.349239E-13, 1235., 3683.102),
              mean = 1235.,
-             stddev = stddev_function(3683.102, 1235.)
+             stddev = fwhm2stddev(3683.102, 1235.)
              ) \
 + \
     models.Gaussian1D(
-             amplitude = -10.921041E-14,
+             amplitude=flux2amplitude(-10.921041E-14, 1258., 3683.102),
              mean = 1258.,
-             stddev = stddev_function(3683.102, 1258.)
+             stddev = fwhm2stddev(3683.102, 1258.)
              ) \
 + \
     models.Gaussian1D(
-             amplitude = -8.921041E-14,
+             amplitude=flux2amplitude(-8.921041E-14, 1262.044, 3683.102),
              mean = 1262.044,
-             stddev = stddev_function(3683.102, 1262.044)
+             stddev = fwhm2stddev(3683.102, 1262.044)
              )
