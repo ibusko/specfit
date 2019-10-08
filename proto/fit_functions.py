@@ -4,14 +4,21 @@ import numpy as np
 
 import astropy.modeling.fitting as fitting
 from astropy.modeling import Fittable1DModel, Parameter
+from astropy.nddata import StdDevUncertainty
 
-from data_objects import SpectrumData
+from specutils import Spectrum1D, SpectralRegion
+import astropy.units as u
 
-import custom_models
-import n5548_models as models
+# from data_objects import SpectrumData
+
+# import custom_models
+# import n5548_models as models
 
 
-def read_file(file_name, regions=None):
+def read_file(file_name, regions=None,
+              flux_units=u.Jy,
+              spectral_axis_units=u.AA):
+
     ''' Reads ASCII table with three columns (wavelength,
         flux, error). Can also read a table with wavelength
         regions that define valid data.
@@ -26,8 +33,7 @@ def read_file(file_name, regions=None):
 
     Returns
     -------
-      an instance of SpectrumData
-
+      an instance of Spectrum1D
     '''
     wa = []
     fl = []
@@ -45,25 +51,27 @@ def read_file(file_name, regions=None):
         if len(columns) > 2:
             er.append(float(columns[2]))
 
-    wave = np.array(wa)
-    flux = np.array(fl)
-    error = np.array(er)
+    wave = np.array(wa) * spectral_axis_units
+    flux = np.array(fl) * flux_units
+    error = np.array(er) * flux_units
 
-    spectrum = SpectrumData()
+    err = StdDevUncertainty(error)
+    spectrum = Spectrum1D(flux=flux, spectral_axis=wave, uncertainty=err)
 
-    spectrum.set_x(wave, unit='Angstrom')
-    spectrum.set_y(flux, unit='erg.s^-1.cm^-2.Angstrom^-1')
-    spectrum.set_e(error, unit='erg.s^-1.cm^-2.Angstrom^-1')
-
-    # Note that SpectrumData does not use masked arrays.
     if regions:
+
+        regions_list = []
         mask = np.zeros(len(wave))
 
         f = open(regions, 'r')
         for line in f:
-            region = line.split()
-            index1 = np.where(wave > float(region[0]))
-            index2 = np.where(wave <  float(region[1]))
+            region_spec = line.split()
+            region = SpectralRegion(float(region_spec[0])*spectral_axis_units, float(region_spec[1])*spectral_axis_units)
+            regions_list.append(region)
+
+            # mask represents all regions together
+            index1 = np.where(wave > region.lower)
+            index2 = np.where(wave < region.upper)
 
             mask1 = np.zeros(len(wave))
             mask1[index1] = 1
@@ -77,18 +85,10 @@ def read_file(file_name, regions=None):
         # be used directly as a weight array by the fitter.
         fmask = np.where(mask, 1.0, 0.0)
 
-        # Can't set a mask in a NDData object. The mask setting causes
-        # the shape of the ndarray inside the NDData object to change to
-        # an (apparently) arbitrary value. For now, we pass the mask
-        # as an independent entity so we can continue to progress on
-        # the main task.
-        #
-        # spectrum.mask = fmask
-
     else:
         fmask = np.ones(len(wave))
 
-    return spectrum, fmask
+    return spectrum, regions, fmask
 
 
 def compoundModel(components):

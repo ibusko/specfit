@@ -6,17 +6,17 @@ from astropy.modeling import Fittable1DModel, Parameter
 
 
 def ccm(wav, ebmv=1, rv=3.5):
-    '''computes reddening correction according to the Cardelli, Clayton and Mathis 
+    '''computes reddening correction according to the Cardelli, Clayton and Mathis
     model (ApJ 1989 v345, p245)
-    
+
     wav: wavelengths in microns (expect a numpy array of wavelengths
     ebmv: e(B-V) in magnitudes
-    rv:  Rv = A(V)/E(B-V) 
+    rv:  Rv = A(V)/E(B-V)
     '''
     x = 1./wav
     irmask = (x >= 0.3) & (x <= 1.1)
     omask  = (x >  1.1) & (x <= 3.3)
-    nuvmask1 = (x > 3.3) & (x <= 8.0) 
+    nuvmask1 = (x > 3.3) & (x <= 8.0)
     nuvmask2 = (x >= 5.9) & (x <= 8.0)
     fuvmask = (x > 8.0) & (x <= 20.)
     a = 0*x
@@ -137,5 +137,3 @@ class powerlaw_2(models.PowerLaw1D):
         x0  = args[1]
         alpha  = args[2]
         super(powerlaw_2, self).__init__(amp, x0, alpha, **kwargs)
-
-
